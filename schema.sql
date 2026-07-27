@@ -49,3 +49,50 @@ CREATE TABLE issues (
     discovered_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (repo_id, github_issue_number)
 );
+
+-- One attempt: a specific issue handed to a specific agent.
+CREATE TABLE runs (
+    id            SERIAL PRIMARY KEY,
+    issue_id      INTEGER NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
+    agent_name    TEXT NOT NULL,     -- 'jules' | 'gemini-2.5-pro' | 'gemini-2.5-flash'
+    branch_name   TEXT,              -- branch on OUR fork, never upstream directly
+    status        TEXT NOT NULL,     -- pending | running | success | failed | timeout
+                                    -- No DEFAULT: dispatch code must set explicitly per agent type.
+                                    -- pending = async agent dispatched (Jules).
+                                    -- running = sync agent executing (Gemini).
+    started_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    finished_at   TIMESTAMPTZ,
+    diff_url      TEXT,
+    session_id    TEXT               -- external task ID for async agents (e.g. Jules session ID);
+                                    -- NULL for sync agents (Gemini)
+);
+
+CREATE TABLE evaluations (
+    id               SERIAL PRIMARY KEY,
+    run_id           INTEGER NOT NULL UNIQUE REFERENCES runs(id) ON DELETE CASCADE,
+                     -- UNIQUE: exactly one evaluation per run. The existence of the row
+                     -- means "we tried to evaluate this." Its absence means "evaluation
+                     -- hasn't run yet."
+    tests_passed     BOOLEAN,
+    test_summary     TEXT,
+    reviewer_score   NUMERIC(5,2),
+    reviewer_notes   JSONB,
+    composite_score  NUMERIC(5,2),   -- weighted combo used for ranking / leaderboard
+    evaluated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE pr_submissions (
+    id                 SERIAL PRIMARY KEY,
+    issue_id           INTEGER NOT NULL UNIQUE REFERENCES issues(id) ON DELETE CASCADE,
+                       -- UNIQUE: exactly one PR submission per issue, ever.
+    winning_run_id     INTEGER NOT NULL REFERENCES runs(id),
+    pr_url             TEXT,
+    disclosure_text    TEXT NOT NULL,   -- required: how we disclose AI involvement
+    submitted_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    maintainer_status  TEXT NOT NULL DEFAULT 'pending' -- pending | merged | closed | rejected
+);
+
+CREATE INDEX idx_issues_status ON issues(status);
+CREATE INDEX idx_runs_issue ON runs(issue_id);
+CREATE INDEX idx_runs_status ON runs(status);       -- Mode 1: poll pending/running runs
+CREATE INDEX idx_evaluations_run ON evaluations(run_id);

@@ -99,3 +99,107 @@ def find_candidate_repos():
 def recent_cutoff():
     return (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d")
 
+
+def check_ai_policy(full_name):
+    """Best-effort keyword check against common policy locations. Returns
+    ('allowed'|'disallowed'|'unknown', source_file, snippet).
+    Unknown is the safe default -- treat it as 'don't auto-submit PRs here
+    yet' upstream, not as tacit permission."""
+    candidates = ["CONTRIBUTING.md", ".github/CONTRIBUTING.md", ".github/PULL_REQUEST_TEMPLATE.md"]
+    for path in candidates:
+        resp = gh_get(f"{GITHUB_API}/repos/{full_name}/contents/{path}")
+        if resp.status_code != 200:
+            continue
+        try:
+            text = base64.b64decode(resp.json()["content"]).decode("utf-8", errors="ignore")
+        except Exception:
+            continue
+        lower = text.lower()
+        for pat in AI_POLICY_DISALLOW_PATTERNS:
+            m = re.search(pat, lower)
+            if m:
+                return "disallowed", path, text[max(0, m.start() - 40): m.end() + 40]
+        for pat in AI_POLICY_ALLOW_PATTERNS:
+            m = re.search(pat, lower)
+            if m:
+                return "allowed", path, text[max(0, m.start() - 40): m.end() + 40]
+    return "unknown", None, None
+
+
+def fetch_open_issues(full_name):
+    resp = gh_get(
+        f"{GITHUB_API}/repos/{full_name}/issues",
+        params={"state": "open", "per_page": 50},
+    )
+    if resp.status_code != 200:
+        return []
+    # NOTE: this endpoint also returns PRs (GitHub treats PRs as issues
+    # internally) -- filter those out explicitly.
+    return [i for i in resp.json() if "pull_request" not in i]
+
+
+def upsert_repo(conn, repo_json):
+    """Writes only -- does not commit. Caller commits once per repo so a
+    mid-repo failure rolls back cleanly instead of leaving partial state."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO repos (github_id, full_name, default_branch, language,
+                                stars, stars_prev, stars_checked_at, is_archived, last_scanned_at)
+            VALUES (%s, %s, %s, %s, %s,
+                    (SELECT stars FROM repos WHERE github_id = %s), now(),
+                    %s, now())
+            ON CONFLICT (github_id) DO UPDATE SET
+                full_name        = EXCLUDED.full_name,
+                stars_prev       = repos.stars,
+                stars            = EXCLUDED.stars,
+                stars_checked_at = now(),
+                is_archived      = EXCLUDED.is_archived,
+                last_scanned_at  = now(),
+                default_branch   = EXCLUDED.default_branch
+            RETURNING id, is_active
+            """,
+            (
+                repo_json["id"], repo_json["full_name"], repo_json["default_branch"],
+                repo_json.get("language"), repo_json["stargazers_count"],
+                repo_json["id"], repo_json["archived"],
+            ),
+        )
+        return cur.fetchone()
+
+
+def upsert_policy(conn, repo_id, status, source_file, snippet):
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO repo_policies (repo_id, allows_ai_prs, source_file, matched_snippet, checked_at)
+            VALUES (%s, %s, %s, %s, now())
+            ON CONFLICT (repo_id) DO UPDATE SET
+                allows_ai_prs = EXCLUDED.allows_ai_prs,
+                source_file = EXCLUDED.source_file,
+                matched_snippet = EXCLUDED.matched_snippet,
+                checked_at = now()
+            """,
+            (repo_id, status, source_file, snippet),
+        )
+
+
+def deactivate_repo(conn, repo_id):
+    with conn.cursor() as cur:
+        cur.execute("UPDATE repos SET is_active = FALSE WHERE id = %s", (repo_id,))
+
+
+def upsert_issue(conn, repo_id, issue_json):
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO issues (repo_id, github_issue_number, title, labels)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (repo_id, github_issue_number) DO UPDATE SET
+                labels = EXCLUDED.labels,
+                title = EXCLUDED.title
+            """,
+            (repo_id, issue_json["number"], issue_json["title"],
+             [l["name"] for l in issue_json["labels"]]),
+        )
+

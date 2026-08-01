@@ -203,3 +203,47 @@ def upsert_issue(conn, repo_id, issue_json):
              [l["name"] for l in issue_json["labels"]]),
         )
 
+
+def process_repo(conn, repo_json):
+    """One repo's worth of work, all in the caller's transaction. Raises
+    on unexpected failure -- main() catches it, rolls back just this
+    repo, and moves on rather than losing the whole run."""
+    if repo_json["archived"]:
+        return
+
+    repo_id, was_active = upsert_repo(conn, repo_json)
+    if not was_active:
+        return  # previously opted-out / disallowed -- respect it, don't re-scan issues
+
+    policy_status, source_file, snippet = check_ai_policy(repo_json["full_name"])
+    upsert_policy(conn, repo_id, policy_status, source_file, snippet)
+    if policy_status == "disallowed":
+        deactivate_repo(conn, repo_id)
+        return
+
+    labeled_target = [
+        i for i in fetch_open_issues(repo_json["full_name"])
+        if TARGET_LABELS & {l["name"].lower() for l in i["labels"]}
+    ]
+    for issue in labeled_target:
+        upsert_issue(conn, repo_id, issue)
+
+
+def main():
+    conn = psycopg2.connect(DB_URL)
+    try:
+        repos = find_candidate_repos()
+        print(f"Scanning {len(repos)} candidate repos")
+        for repo_json in repos:
+            try:
+                process_repo(conn, repo_json)
+                conn.commit()
+            except Exception as exc:
+                conn.rollback()
+                print(f"Skipping {repo_json.get('full_name')}: {exc}", file=sys.stderr)
+    finally:
+        conn.close()
+
+
+if __name__ == "__main__":
+    main()

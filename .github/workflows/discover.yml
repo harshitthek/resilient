@@ -1,0 +1,30 @@
+name: Discover trending repos and candidate issues
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'   # every 3 hours -- tune against your GitHub API budget
+  workflow_dispatch: {}      # manual trigger, useful while testing
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Run discovery
+        env:
+          # IMPORTANT: this must be a separate PAT (classic or fine-grained,
+          # public_repo scope), NOT the default secrets.GITHUB_TOKEN. The
+          # default token is scoped to this single repository and can't
+          # search or read issues across the rest of GitHub.
+          GITHUB_SCAN_TOKEN: ${{ secrets.DISCOVERY_GH_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python scripts/discover.py

@@ -54,3 +54,56 @@ def webhook():
 
     return "", 204
 
+
+def handle_issue_event(payload):
+    # Keep original case for storage (matches discover.py), lowercase only
+    # for the membership check -- otherwise the same label ends up stored
+    # differently depending on which path (cron vs webhook) wrote it.
+    raw_labels = [l["name"] for l in payload["issue"]["labels"]]
+    labels_lower = {name.lower() for name in raw_labels}
+    if not labels_lower & TARGET_LABELS:
+        return  # not a genuine-improvement candidate by our criteria
+
+    full_name = payload["repository"]["full_name"]
+    conn = psycopg2.connect(DB_URL)
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT id FROM repos WHERE full_name = %s AND is_active",
+                (full_name,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return  # only react to repos we're already tracking and
+                        # haven't been told to leave alone
+            repo_id = row[0]
+            cur.execute(
+                """
+                INSERT INTO issues (repo_id, github_issue_number, title, labels)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (repo_id, github_issue_number) DO UPDATE SET
+                    labels = EXCLUDED.labels,
+                    title = EXCLUDED.title
+                """,
+                (repo_id, payload["issue"]["number"], payload["issue"]["title"], raw_labels),
+            )
+    finally:
+        conn.close()
+
+
+def deactivate_repo(full_name):
+    """A repo we're tracking got archived -- stop touching it immediately
+    rather than waiting for the next scheduled scan to notice."""
+    conn = psycopg2.connect(DB_URL)
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                "UPDATE repos SET is_active = FALSE, is_archived = TRUE WHERE full_name = %s",
+                (full_name,),
+            )
+    finally:
+        conn.close()
+
+
+if __name__ == "__main__":
+    app.run(port=int(os.environ.get("PORT", 8000)))

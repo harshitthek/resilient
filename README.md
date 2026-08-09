@@ -97,3 +97,9 @@ until it has its own controlled validation.
 
 See `CONTEXT.md` for design decisions and `ROADMAP.md` for the remaining
 evaluation, submission, and leaderboard work.
+
+## Author & Metadata
+
+- **Author**: Harshit Sharma
+- **Initial Commit Date**: August 9, 2026
+

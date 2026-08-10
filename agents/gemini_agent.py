@@ -313,6 +313,12 @@ def _run_agent_loop(ctx: RepoContext, work_dir: str) -> RunResult:
         return RunResult(status="failed", error=f"Agent error: {e}")
 
 
+def _remove_readonly(func, path, exc_info):
+    import stat
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
+
+
 # --- Adapter ---
 
 class GeminiAgent(AgentAdapter):
@@ -365,8 +371,8 @@ class GeminiAgent(AgentAdapter):
             # Clean up the temporary clone
             if work_dir and os.path.exists(work_dir):
                 try:
-                    shutil.rmtree(work_dir)
-                except OSError:
+                    shutil.rmtree(work_dir, onerror=_remove_readonly)
+                except Exception:
                     pass  # best-effort cleanup
 
     def poll(self, session_id: str) -> RunResult:

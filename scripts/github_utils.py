@@ -169,6 +169,8 @@ def ensure_fork(session, upstream_full_name):
                    json={"default_branch_only": True})
 
     if resp.status_code in (200, 201, 202):
+        if resp.status_code == 202:
+            time.sleep(3)  # Allow GitHub async fork initialization to complete
         fork_data = resp.json()
         return fork_data["full_name"]
 

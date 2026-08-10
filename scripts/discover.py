@@ -20,67 +20,31 @@ Also deliberately does NOT fork, dispatch agents, or touch any repo's
 issues/PRs -- this stage only reads.
 """
 
-import base64
 import os
-import re
 import sys
-import time
 from datetime import datetime, timedelta, timezone
 
 import psycopg2
-import requests
 
-GITHUB_API = "https://api.github.com"
+from github_utils import (
+    GITHUB_API,
+    check_ai_policy,
+    create_github_session,
+    gh_get,
+)
+
 TOKEN = os.environ["GITHUB_SCAN_TOKEN"]  # PAT with public_repo scope -- NOT the default
                                           # Actions GITHUB_TOKEN, which can't search
                                           # outside the current repo.
 DB_URL = os.environ["DATABASE_URL"]
 
-SESSION = requests.Session()
-SESSION.headers.update({
-    "Authorization": f"Bearer {TOKEN}",
-    "Accept": "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-})
+SESSION = create_github_session(TOKEN)
 
 TARGET_LABELS = {"bug", "good first issue", "help wanted"}
-AI_POLICY_DISALLOW_PATTERNS = [
-    r"no\s+ai[-\s]generated\s+(pull requests|prs|code)",
-    r"do not (submit|open)\s+ai[-\s]generated",
-    r"ai[-\s]generated (pull requests|contributions) (are|will be) (not accepted|rejected|closed)",
-    r"no\s+llm[-\s]generated",
-]
-AI_POLICY_ALLOW_PATTERNS = [
-    r"ai[-\s]assisted contributions? (are\s+)?welcome",
-    r"we welcome ai[-\s]generated",
-]
 
 MIN_STARS = 500        # floor so we're not scanning noise
 SCAN_PAGE_SIZE = 30
 MAX_REPOS_PER_RUN = 60  # cost/rate-limit guardrail
-
-
-def gh_get(url, params=None):
-    """GET with basic secondary-rate-limit backoff. Search endpoints have
-    a much stricter limit (30 req/min) than core REST (5000 req/hr for an
-    authenticated PAT), so we back off conservatively on any 403/429.
-
-    A 404 is returned as-is rather than raised -- it's a legitimate,
-    expected response for things like "this repo has no CONTRIBUTING.md",
-    and callers need to be able to tell that apart from a real failure."""
-    for attempt in range(5):
-        resp = SESSION.get(url, params=params)
-        if resp.status_code in (403, 429):
-            reset = resp.headers.get("X-RateLimit-Reset")
-            wait = max(int(reset) - int(time.time()), 5) if reset else 30 * (attempt + 1)
-            print(f"Rate limited on {url}, sleeping {wait}s", file=sys.stderr)
-            time.sleep(min(wait, 120))
-            continue
-        if resp.status_code == 404:
-            return resp
-        resp.raise_for_status()
-        return resp
-    raise RuntimeError(f"Gave up on {url} after repeated rate limiting")
 
 
 def find_candidate_repos():
@@ -90,6 +54,7 @@ def find_candidate_repos():
     once we've snapshotted a repo at least twice."""
     query = f"stars:>{MIN_STARS} pushed:>{recent_cutoff()}"
     resp = gh_get(
+        SESSION,
         f"{GITHUB_API}/search/repositories",
         params={"q": query, "sort": "stars", "order": "desc", "per_page": SCAN_PAGE_SIZE},
     )
@@ -100,34 +65,9 @@ def recent_cutoff():
     return (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d")
 
 
-def check_ai_policy(full_name):
-    """Best-effort keyword check against common policy locations. Returns
-    ('allowed'|'disallowed'|'unknown', source_file, snippet).
-    Unknown is the safe default -- treat it as 'don't auto-submit PRs here
-    yet' upstream, not as tacit permission."""
-    candidates = ["CONTRIBUTING.md", ".github/CONTRIBUTING.md", ".github/PULL_REQUEST_TEMPLATE.md"]
-    for path in candidates:
-        resp = gh_get(f"{GITHUB_API}/repos/{full_name}/contents/{path}")
-        if resp.status_code != 200:
-            continue
-        try:
-            text = base64.b64decode(resp.json()["content"]).decode("utf-8", errors="ignore")
-        except Exception:
-            continue
-        lower = text.lower()
-        for pat in AI_POLICY_DISALLOW_PATTERNS:
-            m = re.search(pat, lower)
-            if m:
-                return "disallowed", path, text[max(0, m.start() - 40): m.end() + 40]
-        for pat in AI_POLICY_ALLOW_PATTERNS:
-            m = re.search(pat, lower)
-            if m:
-                return "allowed", path, text[max(0, m.start() - 40): m.end() + 40]
-    return "unknown", None, None
-
-
 def fetch_open_issues(full_name):
     resp = gh_get(
+        SESSION,
         f"{GITHUB_API}/repos/{full_name}/issues",
         params={"state": "open", "per_page": 50},
     )
@@ -215,7 +155,7 @@ def process_repo(conn, repo_json):
     if not was_active:
         return  # previously opted-out / disallowed -- respect it, don't re-scan issues
 
-    policy_status, source_file, snippet = check_ai_policy(repo_json["full_name"])
+    policy_status, source_file, snippet = check_ai_policy(SESSION, repo_json["full_name"])
     upsert_policy(conn, repo_id, policy_status, source_file, snippet)
     if policy_status == "disallowed":
         deactivate_repo(conn, repo_id)

@@ -1,0 +1,31 @@
+name: Dispatch agents to fix discovered issues
+
+on:
+  schedule:
+    - cron: '0 */8 * * *'   # every 8 hours
+  workflow_dispatch: {}      # manual trigger
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30      # longer than discovery — agent runs take time
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements-dispatch.txt
+
+      - name: Run dispatch
+        env:
+          # PAT with repo scope — needs to fork repos and push branches.
+          GITHUB_DISPATCH_TOKEN: ${{ secrets.DISPATCH_GH_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # Agent API keys
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/dispatch.py

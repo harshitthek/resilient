@@ -63,8 +63,9 @@ CREATE TABLE runs (
     started_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     finished_at   TIMESTAMPTZ,
     diff_url      TEXT,
-    session_id    TEXT               -- external task ID for async agents (e.g. Jules session ID);
+    session_id    TEXT,              -- external task ID for async agents (e.g. Jules session ID);
                                     -- NULL for sync agents (Gemini)
+    error         TEXT               -- terminal failure/timeout detail from the agent or orchestrator
 );
 
 CREATE TABLE evaluations (

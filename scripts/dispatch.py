@@ -174,9 +174,11 @@ def mode1_poll_and_recover(conn, session, agents_by_name):
                     # Guard: never overwrite a terminal status
                     cur.execute("""
                         UPDATE runs
-                        SET status = %s, finished_at = %s, diff_url = COALESCE(%s, diff_url)
+                        SET status = %s, finished_at = %s,
+                            diff_url = COALESCE(%s, diff_url),
+                            error = COALESCE(%s, error)
                         WHERE id = %s AND status NOT IN ('success', 'failed', 'timeout')
-                    """, (new_status, finished_at, diff_url, run_id))
+                    """, (new_status, finished_at, diff_url, error_msg, run_id))
                 conn.commit()
 
         except Exception as exc:
@@ -382,9 +384,9 @@ def dispatch_one_issue(conn, session, agents, *, issue_id, repo_id,
             try:
                 with conn.cursor() as cur:
                     cur.execute("""
-                        UPDATE runs SET status = 'failed', finished_at = now()
+                        UPDATE runs SET status = 'failed', finished_at = now(), error = %s
                         WHERE id = %s AND status NOT IN ('success', 'failed', 'timeout')
-                    """, (run_id,))
+                    """, (str(exc), run_id))
                 conn.commit()
             except Exception:
                 conn.rollback()  # run row may not exist
@@ -432,9 +434,10 @@ def _update_run_from_result(conn, run_id, result):
             cur.execute("""
                 UPDATE runs
                 SET status = %s, finished_at = now(),
-                    diff_url = %s, session_id = COALESCE(%s, session_id)
+                    diff_url = %s, session_id = COALESCE(%s, session_id),
+                    error = %s
                 WHERE id = %s AND status NOT IN ('success', 'failed', 'timeout')
-            """, (result.status, result.diff_url, result.session_id, run_id))
+            """, (result.status, result.diff_url, result.session_id, result.error, run_id))
 
 
 def _policy_is_stale(conn, repo_id):

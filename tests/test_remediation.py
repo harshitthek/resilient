@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, "scripts"))
 from agents.base import RepoContext
 from agents import gemini_agent
 from scripts import discover, dispatch
+from tests.test_dispatch_crash import MockConnection
 
 
 class TestDiscoveryConfiguration(unittest.TestCase):
@@ -79,6 +80,22 @@ class TestGeminiDispatch(unittest.TestCase):
             agents = dispatch.load_agents()
 
         self.assertEqual([agent.name for agent in agents], ["gemini-2.5-pro", "gemini-2.5-flash"])
+
+
+class TestRunErrorPersistence(unittest.TestCase):
+    def test_terminal_error_is_saved(self):
+        """A failed live agent run must retain its diagnostic detail."""
+        conn = MockConnection()
+        dispatch._update_run_from_result(
+            conn,
+            run_id=42,
+            result=gemini_agent.RunResult(status="failed", error="Gemini API rejected request"),
+        )
+        update_query, parameters = next(
+            (query, params) for query, params in conn.queries if "UPDATE runs" in query
+        )
+        self.assertIn("error = %s", update_query)
+        self.assertIn("Gemini API rejected request", parameters)
 
 
 if __name__ == "__main__":

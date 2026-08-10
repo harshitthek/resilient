@@ -1,8 +1,8 @@
-# Roadmap — what's next after discovery
+# Roadmap — what's next after Gemini dispatch
 
-Discovery is built and reviewed (see `CONTEXT.md`). This document
-specifies the three remaining stages: dispatch, evaluation, and
-submission, plus the leaderboard.
+Discovery and Gemini-only dispatch are built (see `CONTEXT.md`). This
+document records the dispatch design and specifies the remaining
+evaluation, submission, and leaderboard stages.
 
 Each stage is described in enough detail to implement from.
 Decisions marked **[OPEN]** still need resolution; decisions marked
@@ -15,7 +15,9 @@ Decisions marked **[OPEN]** still need resolution; decisions marked
 **What it does:** Takes issues with `status = 'discovered'` and hands
 them to one or more AI agents to attempt a fix.
 
-**Status:** Specified, not yet implemented.
+**Status:** Implemented and exercised by the local dispatch safety suite.
+Gemini Pro and Flash use fork-only synchronous execution. Jules is
+intentionally disabled pending a separate controlled validation.
 
 ### Agent API research results
 
@@ -185,7 +187,6 @@ workflow_dispatch: {}       # manual trigger
 
 env:
   GITHUB_DISPATCH_TOKEN    # PAT with repo scope (fork + push)
-  JULES_API_KEY            # from jules.google.com/settings
   GEMINI_API_KEY           # from Google AI Studio
   DATABASE_URL
 ```
@@ -428,7 +429,7 @@ GROUP BY agent_name;
 | Order | Stage | Status |
 |---|---|---|
 | 1 | ~~Discovery~~ | ✅ Done |
-| 2 | Dispatch | 📋 Specified — ready to build |
+| 2 | Dispatch | ✅ Built; Gemini-only, Jules deliberately disabled |
 | 3 | Evaluation | 📋 Specified |
 | 4 | Submission | 📋 Specified |
 | 5 | Leaderboard | 📋 Specified |

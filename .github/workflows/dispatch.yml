@@ -25,7 +25,6 @@ jobs:
           # PAT with repo scope — needs to fork repos and push branches.
           GITHUB_DISPATCH_TOKEN: ${{ secrets.DISPATCH_GH_TOKEN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          # Agent API keys
-          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          # Gemini is the only enabled agent.
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python scripts/dispatch.py

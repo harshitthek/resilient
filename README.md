@@ -11,7 +11,7 @@
 - `requirements-webhook.txt` — dependencies for the webhook receiver (separate deployable; use gunicorn in production)
 - `.env.example` — all required environment variables
 
-### Dispatch stage (specified, not yet built)
+### Dispatch stage (built; Gemini enabled)
 - `agents/base.py` — abstract agent adapter + `RepoContext`/`RunResult` dataclasses
 - `agents/jules_adapter.py` — Jules `v1alpha` REST API integration (async, fire-and-poll)
 - `agents/gemini_agent.py` — Gemini 2.5 Pro/Flash function-calling coding agent (sync)
@@ -31,7 +31,6 @@ Copy `.env.example` to `.env` and fill it in.
 **For GitHub Actions**, set these as repo secrets:
 - `DISCOVERY_GH_TOKEN` — PAT with `public_repo` scope (discovery)
 - `DISPATCH_GH_TOKEN` — PAT with `repo` scope (dispatch — fork + push)
-- `JULES_API_KEY` — from `jules.google.com/settings`
 - `GEMINI_API_KEY` — from Google AI Studio
 - `DATABASE_URL` — Postgres connection string
 
@@ -60,12 +59,12 @@ across the rest of GitHub. You need a separate PAT (`DISCOVERY_GH_TOKEN`)
 with `public_repo` scope. Easy to miss until the workflow fails silently
 with a 403.
 
-**2. Jules opens PRs directly against whatever repo you point it at.**
-When you get to the dispatch stage, make sure the agent's target is
-*your fork*, not the upstream repo — otherwise its "opens a PR when
-done" behavior submits straight to the real project with no evaluation
-or judge step in between. The evaluate-and-rank stage has to sit between
-the agent finishing and anything touching the real repo.
+**2. Agents must only work on your fork.**
+Dispatch creates or reuses a personal fork, creates its working branch
+there, and gives the fork clone URL to Gemini. It never gives an agent an
+upstream write target. Evaluation and submission remain separate, unbuilt
+stages; dispatch does not open upstream PRs. Jules is deliberately disabled
+until it has its own controlled validation.
 
 ## Edge cases this design accounts for
 
@@ -91,10 +90,10 @@ the agent finishing and anything touching the real repo.
 | Stage | Status |
 |---|---|
 | Discovery | ✅ Built and reviewed |
-| Dispatch | 📋 Specified in `ROADMAP.md` — ready to build |
+| Dispatch | ✅ Built; Gemini-only execution is enabled, Jules is disabled pending validation |
 | Evaluation | 📋 Specified in `ROADMAP.md` |
 | Submission | 📋 Specified in `ROADMAP.md` |
 | Leaderboard | 📋 Specified in `ROADMAP.md` |
 
-See `CONTEXT.md` for design decisions and `ROADMAP.md` for the full
-specification of upcoming stages.
+See `CONTEXT.md` for design decisions and `ROADMAP.md` for the remaining
+evaluation, submission, and leaderboard work.

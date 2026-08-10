@@ -73,7 +73,7 @@ def load_agents():
     Returns a list of AgentAdapter instances. Currently:
     - Gemini 2.5 Pro (sync)
     - Gemini 2.5 Flash (sync)
-    - Jules (async) — only if JULES_API_KEY is set
+    - Jules remains deliberately disabled pending its dedicated validation.
 
     Agents are loaded lazily to avoid import errors when optional
     dependencies aren't installed."""
@@ -88,19 +88,12 @@ def load_agents():
     else:
         print("Warning: GEMINI_API_KEY not set, Gemini agents disabled", file=sys.stderr)
 
-    # Jules — only if API key is present
-    jules_key = os.environ.get("JULES_API_KEY")
-    if jules_key:
-        try:
-            from agents.jules_adapter import JulesAdapter
-            agents.append(JulesAdapter())
-        except ImportError:
-            print("Warning: jules_adapter not yet implemented, skipping Jules", file=sys.stderr)
-    else:
-        print("Warning: JULES_API_KEY not set, Jules agent disabled", file=sys.stderr)
+    # Jules is intentionally not loaded, even if a key is present. It must
+    # receive a separate controlled validation before production enablement.
+    print("Info: Jules is disabled pending controlled validation", file=sys.stderr)
 
     if not agents:
-        print("Error: No agents configured. Set GEMINI_API_KEY and/or JULES_API_KEY.",
+        print("Error: No agents configured. Set GEMINI_API_KEY.",
               file=sys.stderr)
 
     return agents

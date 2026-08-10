@@ -25,6 +25,17 @@ Discovery is the first stage of a four-stage pipeline
 | `requirements-webhook.txt` | Python deps for the webhook service (flask, psycopg2-binary, gunicorn) |
 | `.env.example` | Template for the three required environment variables |
 
+### Dispatch stage (complete; Gemini-only)
+
+| File | Purpose |
+|---|---|
+| `scripts/dispatch.py` | Polls/recover runs, validates live issue state and policies, then dispatches Gemini work to fork branches |
+| `scripts/github_utils.py` | Rate-limited GitHub API helpers, policy checks, fork creation, and safe branch creation |
+| `agents/base.py` | Adapter contract and shared repository/run data classes |
+| `agents/gemini_agent.py` | Synchronous Gemini function-calling agent: clone, edit, test, commit, push, and return a fork diff URL |
+| `agents/jules_adapter.py` | Implemented adapter retained for future validation; intentionally not loaded by dispatch |
+| `.github/workflows/dispatch.yml` | Gemini-only scheduled/manual dispatch workflow |
+
 ### Why two discovery paths
 
 "Trending" can only be computed periodically — there's no GitHub event for
@@ -131,7 +142,7 @@ template mentions AI contributions either way. This is treated as
 This distinction matters for the leaderboard: you want agents exercised
 on as many real issues as possible, even if you can't submit the result.
 
-## Dispatch stage design decisions
+## Dispatch stage implementation decisions
 
 These decisions were made during dispatch planning, before implementation.
 
@@ -157,9 +168,8 @@ can be invoked programmatically:
 
 Jules and Gemini have fundamentally different execution models:
 
-- **Jules is async (fire-and-poll):** `dispatch()` starts the task and
-  returns `status='pending'` with a `session_id`. Later dispatch runs
-  call `poll(session_id)` to check if it finished.
+- **Jules is async (fire-and-poll):** its adapter is implemented but
+  intentionally disabled until a dedicated controlled validation is complete.
 - **Gemini is sync (inline agent loop):** `dispatch()` blocks while
   the agent reads code, reasons, and edits. Returns the final status
   when done (typically under 5 minutes).
@@ -267,10 +277,10 @@ dispatch must explicitly set `'pending'` (async) or `'running'`
 | `GITHUB_WEBHOOK_SECRET` | webhook_receiver.py | HMAC secret for verifying incoming webhook payloads |
 | `PORT` | webhook_receiver.py | Only used when running directly (`python webhook_receiver.py`), ignored under gunicorn |
 | `GITHUB_DISPATCH_TOKEN` | dispatch.py | PAT with `repo` scope (needs to fork + push). Can be same as scan token if it has sufficient scope. |
-| `JULES_API_KEY` | dispatch.py | From `jules.google.com/settings`. Used for Jules REST API. |
 | `GEMINI_API_KEY` | dispatch.py | From Google AI Studio. Used for the Gemini function-calling agent. |
 
 ## What's next
 
-Phase 0 contracts are locked. See `ROADMAP.md` for the full
-specification of all stages. Dispatch is next to be built.
+Discovery and Gemini-only dispatch are built. See `ROADMAP.md` for the
+remaining evaluation, submission, and leaderboard stages. Jules remains
+disabled pending separate controlled validation.

@@ -33,12 +33,11 @@ from github_utils import (
     gh_get,
 )
 
-TOKEN = os.environ["GITHUB_SCAN_TOKEN"]  # PAT with public_repo scope -- NOT the default
-                                          # Actions GITHUB_TOKEN, which can't search
-                                          # outside the current repo.
-DB_URL = os.environ["DATABASE_URL"]
-
-SESSION = create_github_session(TOKEN)
+# Configuration is intentionally deferred to main() so that this module can
+# be imported by tests or tooling without requiring deployment secrets.
+TOKEN = ""
+DB_URL = ""
+SESSION = None
 
 TARGET_LABELS = {"bug", "good first issue", "help wanted"}
 
@@ -169,7 +168,29 @@ def process_repo(conn, repo_json):
         upsert_issue(conn, repo_id, issue)
 
 
+def _configure_from_env():
+    """Load and validate required runtime configuration."""
+    global TOKEN, DB_URL, SESSION
+    TOKEN = os.environ.get("GITHUB_SCAN_TOKEN", "")
+    DB_URL = os.environ.get("DATABASE_URL", "")
+    missing = [
+        name for name, value in (
+            ("GITHUB_SCAN_TOKEN", TOKEN),
+            ("DATABASE_URL", DB_URL),
+        ) if not value
+    ]
+    if missing:
+        print(f"Error: missing required environment variable(s): {', '.join(missing)}",
+              file=sys.stderr)
+        return False
+    SESSION = create_github_session(TOKEN)
+    return True
+
+
 def main():
+    if not _configure_from_env():
+        return 1
+
     conn = psycopg2.connect(DB_URL)
     try:
         repos = find_candidate_repos()
@@ -183,7 +204,8 @@ def main():
                 print(f"Skipping {repo_json.get('full_name')}: {exc}", file=sys.stderr)
     finally:
         conn.close()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

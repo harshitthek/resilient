@@ -252,7 +252,7 @@ When you are done (either with a fix or having determined you cannot fix it),
 respond with a clear summary of what you did."""
 
 
-def _run_agent_loop(ctx: RepoContext, work_dir: str) -> RunResult:
+def _run_agent_loop(ctx: RepoContext, work_dir: str, model_id: str) -> RunResult:
     """Run the Gemini function-calling agent loop.
 
     Returns a terminal RunResult (success/failed/timeout)."""
@@ -276,7 +276,7 @@ def _run_agent_loop(ctx: RepoContext, work_dir: str) -> RunResult:
         # Use automatic function calling with an iteration limit.
         # The SDK handles the call-response loop automatically.
         response = client.models.generate_content(
-            model=ctx.language and "gemini-2.5-pro" or "gemini-2.5-pro",  # always use pro
+            model=model_id,
             contents=user_message,
             config=types.GenerateContentConfig(
                 system_instruction=system_prompt,
@@ -304,7 +304,11 @@ def _run_agent_loop(ctx: RepoContext, work_dir: str) -> RunResult:
         # Success — changes were committed and pushed
         diff_stat = _get_diff_stat(work_dir)
         print(f"  Gemini produced changes:\n{diff_stat}", file=sys.stderr)
-        return RunResult(status="success")
+        diff_url = (
+            f"https://github.com/{ctx.fork_full_name}/compare/"
+            f"{ctx.default_branch}...{ctx.branch_name}"
+        )
+        return RunResult(status="success", diff_url=diff_url)
 
     except Exception as e:
         elapsed = time.time() - start_time
@@ -356,7 +360,7 @@ class GeminiAgent(AgentAdapter):
             # Run the agent loop
             print(f"  Starting Gemini agent loop (max {MAX_ITERATIONS} iterations, "
                   f"{TIMEOUT_SECONDS}s timeout)...", file=sys.stderr)
-            result = _run_agent_loop(ctx, work_dir)
+            result = _run_agent_loop(ctx, work_dir, self._model_id)
 
             return result
 

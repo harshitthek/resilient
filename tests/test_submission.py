@@ -19,7 +19,7 @@ class TestCandidateSelection(unittest.TestCase):
         mock_cursor = MagicMock()
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
         mock_cursor.fetchall.return_value = [
-            (1, 100, 0.85, True, 0.80, {}, "gemini-2.5-flash", "resilient/1/gemini", 1, 1, "Issue Title", "Issue Body", 5, "org/repo", "fork/repo", "main", "python")
+            (1, 100, 0.85, True, 0.80, {}, "gemini-2.5-flash", "resilient/1/gemini", 1, 1, "Issue Title", 5, "org/repo", "fork/repo", "main", "python")
         ]
 
         candidates = submit.find_submittable_issues(mock_conn, min_score=0.70)
@@ -101,7 +101,7 @@ class TestSubmissionPipeline(unittest.TestCase):
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
         mock_session = MagicMock()
 
-        candidate = (1, 100, 0.85, True, 0.80, {}, "gemini-2.5-flash", "resilient/1/gemini", 1, 1, "Issue Title", "Issue Body", 5, "org/repo", "fork/repo", "main", "python")
+        candidate = (1, 100, 0.85, True, 0.80, {}, "gemini-2.5-flash", "resilient/1/gemini", 1, 1, "Issue Title", 5, "org/repo", "fork/repo", "main", "python")
 
         with patch("submit.check_ai_policy", return_value="disallowed"):
             submit.submit_issue(mock_conn, mock_session, candidate)

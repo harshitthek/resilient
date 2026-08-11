@@ -52,7 +52,7 @@ def find_submittable_issues(conn, min_score=MIN_COMPOSITE_SCORE):
             SELECT DISTINCT ON (i.id)
                    e.id AS eval_id, e.run_id, e.composite_score, e.tests_passed, e.reviewer_score, e.reviewer_notes,
                    r.agent_name, r.branch_name,
-                   i.id AS issue_id, i.github_issue_number, i.title AS issue_title, i.body AS issue_body,
+                   i.id AS issue_id, i.github_issue_number, i.title AS issue_title,
                    repo.id AS repo_id, repo.full_name AS upstream_full_name, repo.fork_full_name, repo.default_branch, repo.language
             FROM evaluations e
             JOIN runs r ON r.id = e.run_id
@@ -168,7 +168,7 @@ def create_upstream_pr(session, upstream_full_name: str, fork_owner: str, branch
 def submit_issue(conn, session, candidate):
     """Process single issue submission within a database transaction."""
     (eval_id, run_id, composite_score, tests_passed, reviewer_score, reviewer_notes,
-     agent_name, branch_name, issue_id, issue_num, issue_title, issue_body,
+     agent_name, branch_name, issue_id, issue_num, issue_title,
      repo_id, upstream_full_name, fork_full_name, default_branch, language) = candidate
 
     print(f"Processing candidate issue #{issue_num} on {upstream_full_name} (Composite Score: {composite_score:.2f})...", file=sys.stderr)

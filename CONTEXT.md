@@ -25,16 +25,23 @@ Discovery is the first stage of a four-stage pipeline
 | `requirements-webhook.txt` | Python deps for the webhook service (flask, psycopg2-binary, gunicorn) |
 | `.env.example` | Template for the three required environment variables |
 
-### Dispatch stage (complete; Gemini-only)
+### Dispatch stage (complete; Multi-Model & Free-Tier Priority)
 
 | File | Purpose |
 |---|---|
-| `scripts/dispatch.py` | Polls/recover runs, validates live issue state and policies, then dispatches Gemini work to fork branches |
+| `scripts/dispatch.py` | Polls/recovers runs, validates live issue state and policies, dispatches AI agents to fork branches |
 | `scripts/github_utils.py` | Rate-limited GitHub API helpers, policy checks, fork creation, and safe branch creation |
 | `agents/base.py` | Adapter contract and shared repository/run data classes |
-| `agents/gemini_agent.py` | Synchronous Gemini function-calling agent: clone, edit, test, commit, push, and return a fork diff URL |
-| `agents/jules_adapter.py` | Implemented adapter retained for future validation; intentionally not loaded by dispatch |
-| `.github/workflows/dispatch.yml` | Gemini-only scheduled/manual dispatch workflow |
+| `agents/gemini_agent.py` | Synchronous Gemini 2.5 Flash / Pro agent (100% Free Tier via Google AI Studio) |
+| `agents/openrouter_agent.py` | Synchronous OpenRouter Agent (100% Free Tier: Qwen 2.5 Coder 32B Free, DeepSeek R1 Free) |
+| `agents/qwen_agent.py` | Synchronous Qwen 2.5 Coder SOTA Open-Source Coding Agent |
+| `agents/groq_agent.py` | Synchronous Groq Cloud Agent (100% Free High-Speed Cloud Tier) |
+| `agents/ollama_agent.py` | Synchronous Ollama Agent (100% Free Local Open-Source Models) |
+| `agents/openai_agent.py` | Optional OpenAI Agent (GPT-4o, O3-Mini) |
+| `agents/claude_agent.py` | Optional Anthropic Claude Agent (Claude 3.7 / 3.5 Sonnet) |
+| `agents/deepseek_agent.py` | Optional DeepSeek Agent (DeepSeek-Coder) |
+| `agents/jules_adapter.py` | Implemented adapter retained for future validation |
+| `.github/workflows/dispatch.yml` | Multi-model scheduled/manual dispatch workflow |
 
 ### Why two discovery paths
 

@@ -2,6 +2,7 @@
 
 # 🚀 RESILIENT
 ### *Empirical Open-Source AI Coding Agent Leaderboard & Autonomous Remediation Pipeline*
+**Created & Maintained by Harshit ([@harshitthek](https://github.com/harshitthek))**
 
 [![GitHub Actions Status](https://img.shields.io/github/actions/workflow/status/harshitthek/resilient/leaderboard.yml?branch=main&style=for-the-badge&logo=github&label=PIPELINE%20CI)](https://github.com/harshitthek/resilient/actions)
 [![Pytest Suite](https://img.shields.io/badge/TESTS-47%20PASSED%20(100%25)-10b981?style=for-the-badge&logo=pytest)](https://github.com/harshitthek/resilient)
@@ -102,7 +103,7 @@ flowchart TD
 ### 1. Prerequisites & Environment Setup
 Clone the repository and install the dependencies:
 ```bash
-git clone https.github.com/harshitthek/resilient.git
+git clone https://github.com/harshitthek/resilient.git
 cd resilient
 pip install -r scripts/requirements.txt -r requirements-webhook.txt -r scripts/requirements-dispatch.txt
 ```
@@ -174,5 +175,5 @@ resilient/
 ---
 
 <div align="center">
-  <sub>Built with ❤️ by the Resilient Engineering Team. Licensed under the MIT License.</sub>
+  <sub>Created & Maintained with ❤️ by <b>Harshit</b> (<a href="https://github.com/harshitthek">@harshitthek</a>). Licensed under the MIT License.</sub>
 </div>

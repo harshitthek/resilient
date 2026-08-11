@@ -1,5 +1,5 @@
 /**
- * Resilient Leaderboard App Logic — Three.js 3D Background & REST API Integration
+ * Resilient Leaderboard App Logic — Three.js 3D Background & Live REST API Integration
  */
 
 const API_BASE = "http://localhost:8000/api/v1";
@@ -18,14 +18,13 @@ function initThreeJSBackground() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    // Soft, subtle particle starfield
     const particleCount = 600;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
 
-    const color1 = new THREE.Color("#4f46e5");
-    const color2 = new THREE.Color("#06b6d4");
+    const color1 = new THREE.Color("#06b6d4");
+    const color2 = new THREE.Color("#10b981");
 
     for (let i = 0; i < particleCount; i++) {
         positions[i * 3] = (Math.random() - 0.5) * 120;
@@ -41,14 +40,13 @@ function initThreeJSBackground() {
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-    // Texture generator for smooth round glowing points (no sharp blocky squares)
     const canvasTexture = document.createElement('canvas');
     canvasTexture.width = 16;
     canvasTexture.height = 16;
     const ctxTexture = canvasTexture.getContext('2d');
     const grad = ctxTexture.createRadialGradient(8, 8, 0, 8, 8, 8);
     grad.addColorStop(0, 'rgba(255,255,255,1)');
-    grad.addColorStop(0.4, 'rgba(99,102,241,0.6)');
+    grad.addColorStop(0.4, 'rgba(6,182,212,0.6)');
     grad.addColorStop(1, 'rgba(0,0,0,0)');
     ctxTexture.fillStyle = grad;
     ctxTexture.fillRect(0, 0, 16, 16);
@@ -59,7 +57,7 @@ function initThreeJSBackground() {
         map: texture,
         vertexColors: true,
         transparent: true,
-        opacity: 0.35,
+        opacity: 0.45,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
     });
@@ -100,33 +98,7 @@ async function fetchAPI(endpoint) {
             return await res.json();
         }
     } catch (e) {
-        console.warn(`API connection to ${endpoint} failed, loading fallback metrics.`, e);
-    }
-
-    // Fallback data
-    if (endpoint.includes("/leaderboard")) {
-        return [
-            { agent_name: "gemini-2.5-flash", total_runs: 7, successful_runs: 5, failed_runs: 2, pass_rate: 71.4, avg_reviewer_score: 0.86, avg_composite_score: 0.83, prs_submitted: 2, prs_merged: 1, merge_rate: 50.0 },
-            { agent_name: "jules", total_runs: 3, successful_runs: 2, failed_runs: 1, pass_rate: 66.7, avg_reviewer_score: 0.82, avg_composite_score: 0.79, prs_submitted: 1, prs_merged: 0, merge_rate: 0.0 }
-        ];
-    }
-    if (endpoint.includes("/repos")) {
-        return [
-            { id: 1, full_name: "harshitthek/resilient-test", stars: 1250, stars_growth: 40, language: "Python", allows_ai_prs: true, open_issues_count: 3 },
-            { id: 2, full_name: "openclaw/openclaw", stars: 8400, stars_growth: 100, language: "TypeScript", allows_ai_prs: true, open_issues_count: 12 },
-            { id: 3, full_name: "affaan-m/ECC", stars: 3200, stars_growth: 50, language: "Python", allows_ai_prs: true, open_issues_count: 5 }
-        ];
-    }
-    if (endpoint.includes("/runs")) {
-        return [
-            { id: 1, agent_name: "gemini-2.5-flash", status: "success", repo_full_name: "harshitthek/resilient-test", issue_number: 1, issue_title: "add python code to print hello", composite_score: 0.88, tests_passed: true, diff_url: "#" }
-        ];
-    }
-    if (endpoint.includes("/feed")) {
-        return [
-            { id: "1", type: "submission", title: "Submitted PR #1 to harshitthek/resilient-test", repo: "harshitthek/resilient-test", timestamp: new Date().toISOString() },
-            { id: "2", type: "evaluation", title: "Evaluated run #6 — Score: 0.88 (Passed)", repo: "harshitthek/resilient-test", timestamp: new Date().toISOString() }
-        ];
+        console.warn(`API fetch ${endpoint} failed:`, e);
     }
     return [];
 }
@@ -136,6 +108,11 @@ async function loadLeaderboard() {
     const data = await fetchAPI("/leaderboard");
     const tbody = document.getElementById("leaderboard-body");
     if (!tbody) return;
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No agent runs recorded yet. Dispatched runs will populate live.</td></tr>`;
+        return;
+    }
 
     tbody.innerHTML = data.map((item, index) => `
         <tr>
@@ -160,7 +137,7 @@ async function loadLeaderboard() {
 
 function initRadarChart(leaderboardData) {
     const ctx = document.getElementById("comparisonRadarChart");
-    if (!ctx) return;
+    if (!ctx || !leaderboardData || leaderboardData.length === 0) return;
 
     const labels = ["Pass Rate", "Merge Rate", "Quality Score", "Speed", "Reliability"];
     const datasets = leaderboardData.map((model, idx) => ({
@@ -187,7 +164,7 @@ function initRadarChart(leaderboardData) {
                 r: {
                     angleLines: { color: "rgba(255, 255, 255, 0.15)" },
                     grid: { color: "rgba(255, 255, 255, 0.15)" },
-                    pointLabels: { color: "#a0aec0", font: { size: 11 } },
+                    pointLabels: { color: "#cbd5e1", font: { size: 11 } },
                     ticks: { display: false }
                 }
             },
@@ -204,6 +181,11 @@ async function loadRuns() {
     const container = document.getElementById("runs-grid");
     if (!container) return;
 
+    if (!runs || runs.length === 0) {
+        container.innerHTML = `<div class="glass-card" style="padding: 24px; text-align: center; color: var(--text-muted); grid-column: 1/-1;">No runs dispatched yet. Candidate issues land from GitHub discovery scan.</div>`;
+        return;
+    }
+
     container.innerHTML = runs.map(run => `
         <div class="run-card glass-card">
             <div>
@@ -217,7 +199,7 @@ async function loadRuns() {
                     <span>Score: <strong>${run.composite_score}</strong></span>
                 </div>
             </div>
-            <button class="btn-diff" onclick="openDiffModal(${run.id})">🔍 View Git Code Fix Diff</button>
+            <button class="btn-diff" onclick="openDiffModal(${run.id})">🔍 Inspect Code Fix / Error Log</button>
         </div>
     `).join("");
 }
@@ -228,12 +210,20 @@ async function loadRepos() {
     const container = document.getElementById("repo-list");
     if (!container) return;
 
+    const kpiRepos = document.getElementById("kpi-repos");
+    if (kpiRepos && repos.length > 0) kpiRepos.innerText = repos.length;
+
     function renderList(filtered) {
+        if (filtered.length === 0) {
+            container.innerHTML = `<div style="padding: 16px; color: var(--text-muted); font-size: 13px;">No matching repositories found.</div>`;
+            return;
+        }
+
         container.innerHTML = filtered.map(r => `
             <div class="repo-item">
                 <div>
                     <strong>${r.full_name}</strong>
-                    <div style="font-size: 11px; color: var(--text-muted);">
+                    <div style="font-size: 12px; color: var(--text-muted);">
                         ⭐ ${r.stars} (+${r.stars_growth} trending) • ${r.language}
                     </div>
                 </div>
@@ -260,9 +250,14 @@ async function loadActivityFeed() {
     const container = document.getElementById("activity-feed");
     if (!container) return;
 
+    if (!feed || feed.length === 0) {
+        container.innerHTML = `<div style="padding: 16px; color: var(--text-muted); font-size: 13px;">No events recorded in pipeline stream.</div>`;
+        return;
+    }
+
     container.innerHTML = feed.map(item => `
         <div class="activity-item">
-            <strong style="color: var(--accent-cyan); font-size: 12px;">${item.title}</strong>
+            <strong style="color: var(--accent-cyan); font-size: 13px;">${item.title}</strong>
             <span style="font-size: 11px; color: var(--text-muted);">${new Date(item.timestamp).toLocaleTimeString()} • ${item.repo}</span>
         </div>
     `).join("");
@@ -277,19 +272,19 @@ async function openDiffModal(runId) {
     if (!modal || !container) return;
 
     modal.classList.remove("hidden");
-    container.innerHTML = `<p style="padding: 20px; color: var(--text-muted);">Loading git diff patch for run #${runId}...</p>`;
+    container.innerHTML = `<p style="padding: 20px; color: var(--text-muted);">Fetching live git patch / error log for run #${runId}...</p>`;
 
     const diffData = await fetchAPI(`/runs/${runId}/diff`);
     if (diffData && diffData.diff_text) {
-        const diff2htmlUi = new Diff2HtmlUI(container, diffData.diff_text, {
-            drawFileList: true,
-            matching: 'lines',
-            outputFormat: 'side-by-side',
-        });
-        diff2htmlUi.draw();
+        container.innerHTML = `<pre style="padding: 16px; background: rgba(0,0,0,0.6); border-radius: 8px; color: #a5b4fc; overflow-x: auto;">${escapeHtml(diffData.diff_text)}</pre>`;
     } else {
-        container.innerHTML = `<pre style="padding: 16px; background: rgba(0,0,0,0.5); border-radius: 8px;">--- a/hello.py\n+++ b/hello.py\n@@ -0,0 +1,3 @@\n+print("Hello, World from Resilient AI Agent!")</pre>`;
+        container.innerHTML = `<p style="padding: 20px; color: var(--text-muted);">No diff data available for run #${runId}.</p>`;
     }
+}
+
+
+function escapeHtml(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 

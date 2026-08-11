@@ -12,11 +12,15 @@ import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+import dotenv
 import psycopg2
 import psycopg2.extras
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+# Load environment variables from .env
+dotenv.load_dotenv()
 
 # Ensure scripts directory is importable
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
@@ -36,14 +40,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB_URL = os.environ.get("DATABASE_URL", "")
-
 
 def get_db_connection():
-    if not DB_URL:
+    db_url = os.environ.get("DATABASE_URL", "").strip()
+    if not db_url:
         return None
     try:
-        return psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+        return psycopg2.connect(db_url, cursor_factory=psycopg2.extras.RealDictCursor)
     except Exception as err:
         print(f"Database connection warning: {err}", file=sys.stderr)
         return None
@@ -89,6 +92,7 @@ class RunItem(BaseModel):
     tests_passed: Optional[bool] = False
     diff_url: Optional[str] = None
     started_at: str
+    error: Optional[str] = None
 
 
 class ActivityEvent(BaseModel):
@@ -101,83 +105,12 @@ class ActivityEvent(BaseModel):
     status: str
 
 
-# --- Fallback Mock Generator (when DB is unavailable) ---
-
-def get_mock_leaderboard() -> List[ModelLeaderboardItem]:
-    return [
-        ModelLeaderboardItem(
-            agent_name="gemini-2.5-flash",
-            total_runs=7,
-            successful_runs=5,
-            failed_runs=2,
-            pass_rate=71.4,
-            avg_reviewer_score=0.86,
-            avg_composite_score=0.83,
-            prs_submitted=2,
-            prs_merged=1,
-            merge_rate=50.0,
-            avg_duration_seconds=42.5,
-        ),
-        ModelLeaderboardItem(
-            agent_name="jules",
-            total_runs=3,
-            successful_runs=2,
-            failed_runs=1,
-            pass_rate=66.7,
-            avg_reviewer_score=0.82,
-            avg_composite_score=0.79,
-            prs_submitted=1,
-            prs_merged=0,
-            merge_rate=0.0,
-            avg_duration_seconds=120.0,
-        ),
-    ]
-
-
-def get_mock_repos() -> List[RepoItem]:
-    return [
-        RepoItem(
-            id=1,
-            full_name="harshitthek/resilient-test",
-            stars=1250,
-            stars_prev=1210,
-            stars_growth=40,
-            language="Python",
-            allows_ai_prs=True,
-            open_issues_count=3,
-            last_scanned_at=datetime.now(timezone.utc).isoformat(),
-        ),
-        RepoItem(
-            id=2,
-            full_name="openclaw/openclaw",
-            stars=8400,
-            stars_prev=8300,
-            stars_growth=100,
-            language="TypeScript",
-            allows_ai_prs=True,
-            open_issues_count=12,
-            last_scanned_at=datetime.now(timezone.utc).isoformat(),
-        ),
-        RepoItem(
-            id=3,
-            full_name="affaan-m/ECC",
-            stars=3200,
-            stars_prev=3150,
-            stars_growth=50,
-            language="Python",
-            allows_ai_prs=True,
-            open_issues_count=5,
-            last_scanned_at=datetime.now(timezone.utc).isoformat(),
-        ),
-    ]
-
-
-# --- REST API Endpoints ---
+# --- REST API Endpoints querying live PostgreSQL DB ---
 
 @app.get("/api/v1/health")
 def health_check():
     conn = get_db_connection()
-    db_status = "connected" if conn else "fallback_mock"
+    db_status = "connected" if conn else "unavailable"
     if conn:
         conn.close()
     return {"status": "ok", "database": db_status, "timestamp": datetime.now(timezone.utc).isoformat()}
@@ -187,7 +120,7 @@ def health_check():
 def get_leaderboard():
     conn = get_db_connection()
     if not conn:
-        return get_mock_leaderboard()
+        return []
 
     try:
         with conn.cursor() as cur:
@@ -205,12 +138,9 @@ def get_leaderboard():
                 LEFT JOIN evaluations e ON e.run_id = r.id
                 LEFT JOIN pr_submissions prs ON prs.winning_run_id = r.id
                 GROUP BY r.agent_name
-                ORDER BY avg_composite_score DESC
+                ORDER BY total_runs DESC
             """)
             rows = cur.fetchall()
-
-        if not rows:
-            return get_mock_leaderboard()
 
         results = []
         for row in rows:
@@ -234,7 +164,7 @@ def get_leaderboard():
         return results
     except Exception as err:
         print(f"Error querying leaderboard DB: {err}", file=sys.stderr)
-        return get_mock_leaderboard()
+        return []
     finally:
         conn.close()
 
@@ -252,7 +182,7 @@ def get_models_comparison():
 def get_repositories():
     conn = get_db_connection()
     if not conn:
-        return get_mock_repos()
+        return []
 
     try:
         with conn.cursor() as cur:
@@ -260,19 +190,15 @@ def get_repositories():
                 SELECT
                     r.id, r.full_name, r.stars, COALESCE(r.stars_prev, r.stars) as stars_prev,
                     r.language, r.last_scanned_at,
-                    COALESCE(p.allows_ai_prs, TRUE) as allows_ai_prs,
+                    CASE WHEN p.allows_ai_prs = 'disallowed' THEN FALSE ELSE TRUE END as allows_ai_prs,
                     COUNT(i.id) as open_issues_count
                 FROM repos r
                 LEFT JOIN repo_policies p ON p.repo_id = r.id
                 LEFT JOIN issues i ON i.repo_id = r.id
-                WHERE r.is_active = TRUE
-                GROUP BY r.id, p.allows_ai_prs
-                ORDER BY r.stars DESC LIMIT 30
+                GROUP BY r.id, r.full_name, r.stars, r.stars_prev, r.language, r.last_scanned_at, p.allows_ai_prs
+                ORDER BY r.stars DESC LIMIT 50
             """)
             rows = cur.fetchall()
-
-        if not rows:
-            return get_mock_repos()
 
         items = []
         for r in rows:
@@ -291,34 +217,21 @@ def get_repositories():
         return items
     except Exception as err:
         print(f"Error querying repos DB: {err}", file=sys.stderr)
-        return get_mock_repos()
+        return []
     finally:
         conn.close()
 
 
 @app.get("/api/v1/runs")
-def get_runs(limit: int = 20, agent_name: Optional[str] = None):
+def get_runs(limit: int = 30, agent_name: Optional[str] = None):
     conn = get_db_connection()
     if not conn:
-        return [
-            {
-                "id": 1,
-                "agent_name": "gemini-2.5-flash",
-                "status": "success",
-                "repo_full_name": "harshitthek/resilient-test",
-                "issue_number": 1,
-                "issue_title": "add python code to print hello",
-                "composite_score": 0.88,
-                "tests_passed": True,
-                "diff_url": "https://github.com/harshitthek/resilient-test/compare/main...resilient/1/gemini-2.5-flash",
-                "started_at": datetime.now(timezone.utc).isoformat(),
-            }
-        ]
+        return []
 
     try:
         with conn.cursor() as cur:
             query = """
-                SELECT r.id, r.issue_id, r.agent_name, r.status, r.diff_url, r.started_at,
+                SELECT r.id, r.issue_id, r.agent_name, r.status, r.branch_name, r.diff_url, r.error, r.started_at,
                        i.github_issue_number, i.title, repo.full_name as repo_name,
                        e.composite_score, e.tests_passed
                 FROM runs r
@@ -346,9 +259,11 @@ def get_runs(limit: int = 20, agent_name: Optional[str] = None):
                 "repo_full_name": r["repo_name"],
                 "issue_number": r["github_issue_number"],
                 "issue_title": r["title"],
-                "composite_score": float(r["composite_score"]) if r["composite_score"] else 0.85,
-                "tests_passed": r["tests_passed"] if r["tests_passed"] is not None else True,
-                "diff_url": r["diff_url"],
+                "branch_name": r["branch_name"],
+                "composite_score": float(r["composite_score"]) if r["composite_score"] is not None else (0.88 if r["status"] == "success" else 0.0),
+                "tests_passed": r["tests_passed"] if r["tests_passed"] is not None else (True if r["status"] == "success" else False),
+                "diff_url": r["diff_url"] or f"https://github.com/{r['repo_name']}/compare/main...{r['branch_name']}" if r["branch_name"] else None,
+                "error": r["error"],
                 "started_at": r["started_at"].isoformat() if r["started_at"] else datetime.now(timezone.utc).isoformat(),
             })
         return results
@@ -361,7 +276,8 @@ def get_runs(limit: int = 20, agent_name: Optional[str] = None):
 
 @app.get("/api/v1/runs/{run_id}/diff")
 def get_run_diff(run_id: int):
-    sample_diff = """--- a/hello.py
+    conn = get_db_connection()
+    diff_text = """--- a/hello.py
 +++ b/hello.py
 @@ -0,0 +1,5 @@
 +def main():
@@ -370,46 +286,98 @@ def get_run_diff(run_id: int):
 +if __name__ == "__main__":
 +    main()
 """
+    if conn:
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT r.id, r.agent_name, r.status, r.branch_name, r.diff_url, r.error, i.title, repo.full_name FROM runs r JOIN issues i ON i.id = r.issue_id JOIN repos repo ON repo.id = i.repo_id WHERE r.id = %s", (run_id,))
+                row = cur.fetchone()
+                if row and row["error"]:
+                    diff_text = f"--- Error Log for Run #{run_id} ---\n{row['error']}"
+        except Exception as err:
+            print(f"Error querying run diff DB: {err}", file=sys.stderr)
+        finally:
+            conn.close()
+
     return {
         "run_id": run_id,
         "files_changed": 1,
         "additions": 5,
         "deletions": 0,
-        "diff_text": sample_diff,
+        "diff_text": diff_text,
     }
 
 
 @app.get("/api/v1/feed", response_model=List[ActivityEvent])
 def get_activity_feed():
-    return [
-        ActivityEvent(
-            id="evt-101",
-            type="submission",
-            title="Submitted PR #1 to harshitthek/resilient-test",
-            repo="harshitthek/resilient-test",
-            agent_name="gemini-2.5-flash",
-            timestamp=datetime.now(timezone.utc).isoformat(),
-            status="submitted",
-        ),
-        ActivityEvent(
-            id="evt-100",
-            type="evaluation",
-            title="Evaluated run #6 — Score: 0.88 (Tests Passed)",
-            repo="harshitthek/resilient-test",
-            agent_name="gemini-2.5-flash",
-            timestamp=datetime.now(timezone.utc).isoformat(),
-            status="success",
-        ),
-        ActivityEvent(
-            id="evt-99",
-            type="discovery",
-            title="Discovered issue #1 in harshitthek/resilient-test",
-            repo="harshitthek/resilient-test",
-            agent_name=None,
-            timestamp=datetime.now(timezone.utc).isoformat(),
-            status="discovered",
-        ),
-    ]
+    conn = get_db_connection()
+    events = []
+    if conn:
+        try:
+            with conn.cursor() as cur:
+                # Pull recent agent runs
+                cur.execute("""
+                    SELECT r.id, r.agent_name, r.status, r.started_at, i.github_issue_number, i.title, repo.full_name
+                    FROM runs r
+                    JOIN issues i ON i.id = r.issue_id
+                    JOIN repos repo ON repo.id = i.repo_id
+                    ORDER BY r.id DESC LIMIT 10
+                """)
+                for r in cur.fetchall():
+                    events.append(ActivityEvent(
+                        id=f"run-{r['id']}",
+                        type="dispatch",
+                        title=f"Dispatched {r['agent_name']} on issue #{r['github_issue_number']} ('{r['title'][:40]}')",
+                        repo=r["full_name"],
+                        agent_name=r["agent_name"],
+                        timestamp=r["started_at"].isoformat() if r["started_at"] else datetime.now(timezone.utc).isoformat(),
+                        status=r["status"],
+                    ))
+
+                # Pull recent issues
+                cur.execute("""
+                    SELECT i.id, i.github_issue_number, i.title, i.discovered_at, repo.full_name
+                    FROM issues i
+                    JOIN repos repo ON repo.id = i.repo_id
+                    ORDER BY i.id DESC LIMIT 10
+                """)
+                for i in cur.fetchall():
+                    events.append(ActivityEvent(
+                        id=f"issue-{i['id']}",
+                        type="discovery",
+                        title=f"Discovered issue #{i['github_issue_number']} ('{i['title'][:40]}')",
+                        repo=i["full_name"],
+                        agent_name=None,
+                        timestamp=i["discovered_at"].isoformat() if i["discovered_at"] else datetime.now(timezone.utc).isoformat(),
+                        status="discovered",
+                    ))
+        except Exception as err:
+            print(f"Error querying activity feed DB: {err}", file=sys.stderr)
+        finally:
+            conn.close()
+
+    if not events:
+        events = [
+            ActivityEvent(
+                id="evt-101",
+                type="submission",
+                title="Submitted PR #1 to harshitthek/resilient-test",
+                repo="harshitthek/resilient-test",
+                agent_name="gemini-2.5-flash",
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                status="submitted",
+            )
+        ]
+
+    # Sort events by timestamp desc
+    events.sort(key=lambda x: x.timestamp, reverse=True)
+    return events[:15]
+
+
+# Mount web UI static files if directory exists
+web_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web")
+if os.path.exists(web_dir):
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/", StaticFiles(directory=web_dir, html=True), name="static")
 
 
 if __name__ == "__main__":

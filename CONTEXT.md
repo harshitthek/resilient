@@ -281,6 +281,6 @@ dispatch must explicitly set `'pending'` (async) or `'running'`
 
 ## What's next
 
-Discovery and Gemini-only dispatch are built. See `ROADMAP.md` for the
-remaining evaluation, submission, and leaderboard stages. Jules remains
-disabled pending separate controlled validation.
+Discovery and Gemini-only dispatch are built, tested, and verified live on GitHub Actions (`discover.yml` and `dispatch.yml`). Live execution was verified against `harshitthek/resilient-test#1` with `gemini-2.5-flash` producing code changes on a fork branch.
+
+See `ROADMAP.md` for the next stage: Stage 3 (Evaluation). Jules remains disabled pending separate controlled validation.

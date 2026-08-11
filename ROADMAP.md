@@ -429,7 +429,7 @@ GROUP BY agent_name;
 | Order | Stage | Status |
 |---|---|---|
 | 1 | ~~Discovery~~ | ✅ Done |
-| 2 | Dispatch | ✅ Built; Gemini-only, Jules deliberately disabled |
+| 2 | Dispatch | ✅ Built & Live Verified; Gemini 2.5 Flash enabled, Jules deliberately disabled |
 | 3 | Evaluation | 📋 Specified |
 | 4 | Submission | 📋 Specified |
 | 5 | Leaderboard | 📋 Specified |

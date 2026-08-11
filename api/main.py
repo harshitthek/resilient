@@ -18,6 +18,7 @@ import psycopg2
 import psycopg2.extras
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 # Load environment variables from .env
@@ -99,6 +100,14 @@ class TriggerResponse(BaseModel):
 
 
 # --- REST API Endpoints ---
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    favicon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "favicon.svg")
+    if os.path.exists(favicon_path):
+        return FileResponse(favicon_path, media_type="image/svg+xml")
+    return HTTPException(status_code=404, detail="Favicon not found")
+
 
 @app.get("/api/v1/health")
 def health_check():

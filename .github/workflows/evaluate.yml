@@ -1,0 +1,27 @@
+name: Evaluate completed agent runs
+
+on:
+  schedule:
+    - cron: '30 */8 * * *'   # 30 mins after dispatch run
+  workflow_dispatch: {}      # manual trigger
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements-evaluate.txt
+
+      - name: Run evaluation
+        env:
+          GITHUB_DISPATCH_TOKEN: ${{ secrets.DISPATCH_GH_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python scripts/evaluate.py

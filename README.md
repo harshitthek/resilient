@@ -91,9 +91,9 @@ until it has its own controlled validation.
 |---|---|
 | Discovery | ✅ Built and reviewed |
 | Dispatch | ✅ Built; Gemini-only execution is enabled, Jules is disabled pending validation |
-| Evaluation | 📋 Specified in `ROADMAP.md` |
+| Evaluation | ✅ Built & Tested (24 unit tests passing) |
 | Submission | 📋 Specified in `ROADMAP.md` |
 | Leaderboard | 📋 Specified in `ROADMAP.md` |
 
 See `CONTEXT.md` for design decisions and `ROADMAP.md` for the remaining
-evaluation, submission, and leaderboard work.
+submission and leaderboard work.

@@ -430,7 +430,7 @@ GROUP BY agent_name;
 |---|---|---|
 | 1 | ~~Discovery~~ | ✅ Done |
 | 2 | Dispatch | ✅ Built & Live Verified; Gemini 2.5 Flash enabled, Jules deliberately disabled |
-| 3 | Evaluation | 📋 Specified |
+| 3 | Evaluation | ✅ Built & Tested |
 | 4 | Submission | 📋 Specified |
 | 5 | Leaderboard | 📋 Specified |
 

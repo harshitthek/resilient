@@ -112,6 +112,25 @@ class TestCodeQualityAssessment(unittest.TestCase):
             self.assertEqual(score, 0.85)
             self.assertTrue(notes["syntax_valid"])
 
+    def test_large_diff_penalty(self):
+        with patch("subprocess.run") as mock_run:
+            large_diff = "line\n" * 550
+            mock_run.side_effect = [
+                MagicMock(stdout=large_diff, returncode=0),
+                MagicMock(stdout="main.py\n", returncode=0),
+            ]
+            score, notes = evaluate.assess_code_quality(self.test_dir)
+            self.assertEqual(score, 0.70)
+            self.assertIn("Large diff size (>500 lines)", notes["findings"])
+
+    def test_timeout_execution_handled(self):
+        import subprocess
+        with patch("subprocess.run") as mock_run:
+            mock_run.side_effect = subprocess.TimeoutExpired(cmd=["pytest"], timeout=300)
+            passed, summary = evaluate.detect_and_run_tests(self.test_dir, language="python")
+            self.assertFalse(passed)
+            self.assertIn("timed out after 300s", summary)
+
 
 class TestEvaluationPipeline(unittest.TestCase):
     def test_find_unevaluated_runs(self):

@@ -1,4 +1,4 @@
-psycopg2-binary>=2.9.0
+psycopg2-binary>=2.9.12
 requests>=2.34.2
 google-genai>=0.1.0
 pyjwt>=2.8.0

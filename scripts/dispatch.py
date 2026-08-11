@@ -104,7 +104,18 @@ def load_agents():
         except Exception as exc:
             print(f"Warning: Failed loading Ollama agent: {exc}", file=sys.stderr)
 
-    # 3. Groq Cloud Agent (100% Free Cloud Tier)
+    # 3. OpenRouter Free Models & Qwen 2.5 Coder
+    if os.environ.get("OPENROUTER_API_KEY"):
+        try:
+            from agents.openrouter_agent import OpenRouterAgent
+            from agents.qwen_agent import QwenAgent
+            agents.append(QwenAgent(model_id="qwen-2.5-coder"))
+            agents.append(OpenRouterAgent(model_id="qwen/qwen-2.5-coder-32b-instruct:free"))
+            agents.append(OpenRouterAgent(model_id="deepseek/deepseek-r1:free"))
+        except Exception as exc:
+            print(f"Warning: Failed loading OpenRouter / Qwen agent: {exc}", file=sys.stderr)
+
+    # 4. Groq Cloud Agent (100% Free Cloud Tier)
     if os.environ.get("GROQ_API_KEY"):
         try:
             from agents.groq_agent import GroqAgent

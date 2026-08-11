@@ -67,6 +67,49 @@ def sanitize_token(text: str) -> str:
     return sanitized
 
 
+def get_app_installation_token(app_id: str, private_key_pem: str, owner: str = None) -> str:
+    """Generate a temporary installation access token for resilient-bot (GitHub App)."""
+    import jwt
+    now = int(time.time())
+    payload = {
+        "iat": now - 60,
+        "exp": now + (10 * 60),
+        "iss": str(app_id).strip(),
+    }
+    encoded_jwt = jwt.encode(payload, private_key_pem.strip(), algorithm="RS256")
+
+    headers = {
+        "Authorization": f"Bearer {encoded_jwt}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+    # Fetch app installations
+    resp = requests.get(f"{GITHUB_API}/app/installations", headers=headers, timeout=30)
+    resp.raise_for_status()
+    installations = resp.json()
+
+    if not installations:
+        raise RuntimeError(f"No installations found for GitHub App ID {app_id}")
+
+    installation_id = None
+    if owner:
+        for inst in installations:
+            if inst.get("account", {}).get("login", "").lower() == owner.lower():
+                installation_id = inst["id"]
+                break
+
+    if not installation_id:
+        installation_id = installations[0]["id"]
+
+    # Exchange for installation token
+    token_url = f"{GITHUB_API}/app/installations/{installation_id}/access_tokens"
+    token_resp = requests.post(token_url, headers=headers, timeout=30)
+    token_resp.raise_for_status()
+    return token_resp.json()["token"]
+
+
+
 
 def gh_post(session, url, json=None):
     """POST with the same backoff semantics as gh_get().

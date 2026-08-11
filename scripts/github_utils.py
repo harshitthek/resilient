@@ -76,7 +76,8 @@ def get_app_installation_token(app_id: str, private_key_pem: str, owner: str = N
         "exp": now + (10 * 60),
         "iss": str(app_id).strip(),
     }
-    encoded_jwt = jwt.encode(payload, private_key_pem.strip(), algorithm="RS256")
+    formatted_pem = private_key_pem.strip().replace("\\n", "\n")
+    encoded_jwt = jwt.encode(payload, formatted_pem, algorithm="RS256")
 
     headers = {
         "Authorization": f"Bearer {encoded_jwt}",

@@ -50,8 +50,9 @@ MAX_REPOS_PER_RUN = 60  # cost/rate-limit guardrail
 def fetch_github_trending_repos() -> list[str]:
     """Scrape real-time trending repositories from github.com/trending."""
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    session = SESSION or create_github_session("")
     try:
-        resp = SESSION.get("https://github.com/trending", headers=headers, timeout=15)
+        resp = session.get("https://github.com/trending", headers=headers, timeout=15)
         if resp.status_code != 200:
             return []
         matches = re.findall(r'<h2[^>]*class="[^"]*h3[^"]*"[^>]*>\s*<a[^>]*href="/([^"]+)"', resp.text)
@@ -74,8 +75,9 @@ def fetch_github_trending_repos() -> list[str]:
 def fetch_ossinsight_trending_repos() -> list[str]:
     """Fetch trending repositories from OSSInsight API."""
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    session = SESSION or create_github_session("")
     try:
-        resp = SESSION.get("https://api.ossinsight.io/v1/trends/repos/", headers=headers, timeout=15)
+        resp = session.get("https://api.ossinsight.io/v1/trends/repos/", headers=headers, timeout=15)
         if resp.status_code != 200:
             return []
         items = resp.json().get("data", [])

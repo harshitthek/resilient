@@ -214,7 +214,7 @@ def get_leaderboard():
 
         results = []
         for row in rows:
-            tot = row["total_runs"] or 1
+            tot = row["total_runs"] or 0
             succ = row["successful_runs"] or 0
             pr_sub = row["prs_submitted"] or 0
             pr_mrg = row["prs_merged"] or 0
@@ -223,7 +223,7 @@ def get_leaderboard():
                 total_runs=tot,
                 successful_runs=succ,
                 failed_runs=row["failed_runs"] or 0,
-                pass_rate=round((succ / tot) * 100, 1),
+                pass_rate=round((succ / tot) * 100, 1) if tot > 0 else 0.0,
                 avg_reviewer_score=round(float(row["avg_reviewer_score"] or 0.85), 2),
                 avg_composite_score=round(float(row["avg_composite_score"] or 0.82), 2),
                 prs_submitted=pr_sub,

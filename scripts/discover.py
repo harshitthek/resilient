@@ -171,8 +171,8 @@ def process_repo(conn, repo_json):
 def _configure_from_env():
     """Load and validate required runtime configuration."""
     global TOKEN, DB_URL, SESSION
-    TOKEN = os.environ.get("GITHUB_SCAN_TOKEN", "")
-    DB_URL = os.environ.get("DATABASE_URL", "")
+    TOKEN = os.environ.get("GITHUB_SCAN_TOKEN", "").strip()
+    DB_URL = os.environ.get("DATABASE_URL", "").strip()
     missing = [
         name for name, value in (
             ("GITHUB_SCAN_TOKEN", TOKEN),

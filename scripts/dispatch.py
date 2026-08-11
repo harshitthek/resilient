@@ -480,8 +480,8 @@ def _deactivate_repo(conn, repo_id):
 def main():
     global DB_URL, DISPATCH_TOKEN
     # Validate required env vars (module-level uses .get for testability)
-    DB_URL = os.environ.get("DATABASE_URL", "")
-    DISPATCH_TOKEN = os.environ.get("GITHUB_DISPATCH_TOKEN", "")
+    DB_URL = os.environ.get("DATABASE_URL", "").strip()
+    DISPATCH_TOKEN = os.environ.get("GITHUB_DISPATCH_TOKEN", "").strip()
     if not DB_URL:
         print("Error: DATABASE_URL not set", file=sys.stderr)
         sys.exit(1)

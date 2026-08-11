@@ -21,6 +21,7 @@ issues/PRs -- this stage only reads.
 """
 
 import os
+import re
 import sys
 from datetime import datetime, timedelta, timezone
 
@@ -46,18 +47,92 @@ SCAN_PAGE_SIZE = 30
 MAX_REPOS_PER_RUN = 60  # cost/rate-limit guardrail
 
 
+def fetch_github_trending_repos() -> list[str]:
+    """Scrape real-time trending repositories from github.com/trending."""
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    try:
+        resp = SESSION.get("https://github.com/trending", headers=headers, timeout=15)
+        if resp.status_code != 200:
+            return []
+        matches = re.findall(r'<h2[^>]*class="[^"]*h3[^"]*"[^>]*>\s*<a[^>]*href="/([^"]+)"', resp.text)
+        if not matches:
+            matches = re.findall(r'href="/([a-zA-Z0-9_\-\.]+/[a-zA-Z0-9_\-\.]+)"\s+data-hydro-click', resp.text)
+
+        trending = []
+        excluded = {"sponsors", "apps", "trending", "features", "topics", "collections", "events", "about", "pricing"}
+        for m in matches:
+            clean = m.strip().replace(" ", "")
+            parts = clean.split("/")
+            if len(parts) == 2 and parts[0] not in excluded and parts[1] not in excluded and clean not in trending:
+                trending.append(clean)
+        return trending
+    except Exception as exc:
+        print(f"Warning: GitHub Trending scrape failed: {exc}", file=sys.stderr)
+        return []
+
+
+def fetch_ossinsight_trending_repos() -> list[str]:
+    """Fetch trending repositories from OSSInsight API."""
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    try:
+        resp = SESSION.get("https://api.ossinsight.io/v1/trends/repos/", headers=headers, timeout=15)
+        if resp.status_code != 200:
+            return []
+        items = resp.json().get("data", [])
+        repos = []
+        for item in items:
+            name = item.get("repo_name") or item.get("name")
+            if name and "/" in name and name not in repos:
+                repos.append(name)
+        return repos
+    except Exception as exc:
+        print(f"Warning: OSSInsight API fetch failed: {exc}", file=sys.stderr)
+        return []
+
+
 def find_candidate_repos():
-    """Broad, legitimate star-count search (no scraping github.com/trending,
-    which is fragile and against the spirit of the ToS for automated use).
-    'Trending' itself is computed downstream from the stars/stars_prev delta
-    once we've snapshotted a repo at least twice."""
+    """Discover candidate repos combining GitHub Trending, OSSInsight Trending, and GitHub Search API."""
+    candidate_names = []
+
+    # 1. Fetch from GitHub Trending
+    gh_trending = fetch_github_trending_repos()
+    print(f"Discovered {len(gh_trending)} repos from github.com/trending", file=sys.stderr)
+    candidate_names.extend(gh_trending)
+
+    # 2. Fetch from OSSInsight Trending
+    oss_trending = fetch_ossinsight_trending_repos()
+    print(f"Discovered {len(oss_trending)} repos from ossinsight.io/trending", file=sys.stderr)
+    for name in oss_trending:
+        if name not in candidate_names:
+            candidate_names.append(name)
+
+    # 3. Fallback/Supplement from GitHub Search API
     query = f"stars:>{MIN_STARS} pushed:>{recent_cutoff()}"
-    resp = gh_get(
-        SESSION,
-        f"{GITHUB_API}/search/repositories",
-        params={"q": query, "sort": "stars", "order": "desc", "per_page": SCAN_PAGE_SIZE},
-    )
-    return resp.json().get("items", [])[:MAX_REPOS_PER_RUN]
+    try:
+        resp = gh_get(
+            SESSION,
+            f"{GITHUB_API}/search/repositories",
+            params={"q": query, "sort": "stars", "order": "desc", "per_page": SCAN_PAGE_SIZE},
+        )
+        if resp.status_code == 200:
+            for item in resp.json().get("items", []):
+                full_name = item.get("full_name")
+                if full_name and full_name not in candidate_names:
+                    candidate_names.append(full_name)
+    except Exception as exc:
+        print(f"Search API query failed: {exc}", file=sys.stderr)
+
+    # Fetch full repo JSON metadata via GitHub API for each discovered name
+    full_repos = []
+    for full_name in candidate_names[:MAX_REPOS_PER_RUN]:
+        try:
+            r = gh_get(SESSION, f"{GITHUB_API}/repos/{full_name}")
+            if r.status_code == 200:
+                full_repos.append(r.json())
+        except Exception as exc:
+            print(f"Failed to fetch metadata for {full_name}: {exc}", file=sys.stderr)
+
+    return full_repos
 
 
 def recent_cutoff():

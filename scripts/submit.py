@@ -197,12 +197,14 @@ def submit_issue(conn, session, candidate):
         body, disclosure = build_pr_body(issue_num, issue_title, agent_name, composite_score, reviewer_score, tests_passed)
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO pr_submissions (issue_id, run_id, pr_url, pr_number, submitted_at, disclosure_text)
-                VALUES (%s, %s, %s, %s, now(), %s)
+                INSERT INTO pr_submissions (issue_id, winning_run_id, pr_url, disclosure_text, submitted_at)
+                VALUES (%s, %s, %s, %s, now())
                 ON CONFLICT (issue_id) DO UPDATE SET
+                    winning_run_id = EXCLUDED.winning_run_id,
                     pr_url = EXCLUDED.pr_url,
-                    pr_number = EXCLUDED.pr_number;
-                UPDATE issues SET status = 'submitted', updated_at = now() WHERE id = %s;
+                    disclosure_text = EXCLUDED.disclosure_text,
+                    submitted_at = now();
+                UPDATE issues SET status = 'submitted' WHERE id = %s;
             """, (issue_id, run_id, existing_url, existing_num, disclosure, issue_id))
         conn.commit()
         return
@@ -218,12 +220,14 @@ def submit_issue(conn, session, candidate):
         # 5. DB State Update
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO pr_submissions (issue_id, run_id, pr_url, pr_number, submitted_at, disclosure_text)
-                VALUES (%s, %s, %s, %s, now(), %s)
+                INSERT INTO pr_submissions (issue_id, winning_run_id, pr_url, disclosure_text, submitted_at)
+                VALUES (%s, %s, %s, %s, now())
                 ON CONFLICT (issue_id) DO UPDATE SET
+                    winning_run_id = EXCLUDED.winning_run_id,
                     pr_url = EXCLUDED.pr_url,
-                    pr_number = EXCLUDED.pr_number;
-                UPDATE issues SET status = 'submitted', updated_at = now() WHERE id = %s;
+                    disclosure_text = EXCLUDED.disclosure_text,
+                    submitted_at = now();
+                UPDATE issues SET status = 'submitted' WHERE id = %s;
             """, (issue_id, run_id, pr_url, pr_num, disclosure_text, issue_id))
         conn.commit()
 
@@ -236,13 +240,15 @@ def submit_issue(conn, session, candidate):
             if exists:
                 with conn.cursor() as cur:
                     cur.execute("""
-                        INSERT INTO pr_submissions (issue_id, run_id, pr_url, pr_number, submitted_at, disclosure_text)
-                        VALUES (%s, %s, %s, %s, now(), %s)
+                        INSERT INTO pr_submissions (issue_id, winning_run_id, pr_url, disclosure_text, submitted_at)
+                        VALUES (%s, %s, %s, %s, now())
                         ON CONFLICT (issue_id) DO UPDATE SET
+                            winning_run_id = EXCLUDED.winning_run_id,
                             pr_url = EXCLUDED.pr_url,
-                            pr_number = EXCLUDED.pr_number;
-                        UPDATE issues SET status = 'submitted', updated_at = now() WHERE id = %s;
-                    """, (issue_id, run_id, existing_url, existing_num, disclosure_text, issue_id))
+                            disclosure_text = EXCLUDED.disclosure_text,
+                            submitted_at = now();
+                        UPDATE issues SET status = 'submitted' WHERE id = %s;
+                    """, (issue_id, run_id, existing_url, disclosure_text, issue_id))
                 conn.commit()
                 return
 

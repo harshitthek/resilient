@@ -22,15 +22,16 @@ import psycopg2
 from flask import Flask, abort, request
 
 app = Flask(__name__)
-WEBHOOK_SECRET = os.environ["GITHUB_WEBHOOK_SECRET"].encode()
-DB_URL = os.environ["DATABASE_URL"]
 TARGET_LABELS = {"bug", "good first issue", "help wanted"}
 
 
 def verify_signature(payload_body: bytes, signature_header: str | None) -> bool:
     if not signature_header:
         return False
-    expected = "sha256=" + hmac.new(WEBHOOK_SECRET, payload_body, hashlib.sha256).hexdigest()
+    webhook_secret = os.environ.get("GITHUB_WEBHOOK_SECRET", "").encode()
+    if not webhook_secret:
+        return False
+    expected = "sha256=" + hmac.new(webhook_secret, payload_body, hashlib.sha256).hexdigest()
     # constant-time compare -- do not use `==` here, it leaks timing info
     return hmac.compare_digest(expected, signature_header)
 
@@ -65,7 +66,7 @@ def handle_issue_event(payload):
         return  # not a genuine-improvement candidate by our criteria
 
     full_name = payload["repository"]["full_name"]
-    conn = psycopg2.connect(DB_URL)
+    conn = psycopg2.connect(os.environ.get("DATABASE_URL", ""))
     try:
         with conn, conn.cursor() as cur:
             cur.execute(
@@ -94,7 +95,7 @@ def handle_issue_event(payload):
 def deactivate_repo(full_name):
     """A repo we're tracking got archived -- stop touching it immediately
     rather than waiting for the next scheduled scan to notice."""
-    conn = psycopg2.connect(DB_URL)
+    conn = psycopg2.connect(os.environ.get("DATABASE_URL", ""))
     try:
         with conn, conn.cursor() as cur:
             cur.execute(

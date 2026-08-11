@@ -91,9 +91,9 @@ until it has its own controlled validation.
 |---|---|
 | Discovery | ✅ Built and reviewed |
 | Dispatch | ✅ Built; Gemini-only execution is enabled, Jules is disabled pending validation |
-| Evaluation | ✅ Built & Tested (24 unit tests passing) |
-| Submission | 📋 Specified in `ROADMAP.md` |
+| Evaluation | ✅ Built & Tested (33 unit tests passing) |
+| Submission | ✅ Built & Tested (`scripts/submit.py`, GitHub App & PAT auth) |
 | Leaderboard | 📋 Specified in `ROADMAP.md` |
 
 See `CONTEXT.md` for design decisions and `ROADMAP.md` for the remaining
-submission and leaderboard work.
+leaderboard work.

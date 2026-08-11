@@ -274,20 +274,32 @@ def _run_agent_loop(ctx: RepoContext, work_dir: str, model_id: str) -> RunResult
     start_time = time.time()
 
     try:
-        # Use automatic function calling with an iteration limit.
-        # The SDK handles the call-response loop automatically.
-        response = client.models.generate_content(
-            model=model_id,
-            contents=user_message,
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                tools=tool_functions,
-                automatic_function_calling=types.AutomaticFunctionCallingConfig(
-                    maximum_remote_calls=MAX_ITERATIONS,
-                ),
-                temperature=0.2,  # deterministic-ish for code
-            ),
-        )
+        response = None
+        for attempt in range(5):
+            try:
+                response = client.models.generate_content(
+                    model=model_id,
+                    contents=user_message,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        tools=tool_functions,
+                        automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                            maximum_remote_calls=MAX_ITERATIONS,
+                        ),
+                        temperature=0.2,  # deterministic-ish for code
+                    ),
+                )
+                break
+            except Exception as api_err:
+                if "429" in str(api_err) or "RESOURCE_EXHAUSTED" in str(api_err):
+                    wait = 25 * (attempt + 1)
+                    print(f"Gemini API rate limited (429), backing off for {wait}s...", file=sys.stderr)
+                    time.sleep(wait)
+                    continue
+                raise api_err
+
+        if not response:
+            return RunResult(status="failed", error="Gemini API failed after rate limit retries")
 
         elapsed = time.time() - start_time
         if elapsed > TIMEOUT_SECONDS:

@@ -230,7 +230,27 @@ def submit_issue(conn, session, candidate):
     except Exception as exc:
         conn.rollback()
         sanitized_err = sanitize_token(str(exc))
+        if "422" in sanitized_err or "already exists" in sanitized_err.lower():
+            print(f"  Received 422 from GitHub API for issue #{issue_num}. Checking for existing PR or no-op branch...", file=sys.stderr)
+            exists, existing_url, existing_num = check_existing_pr(session, upstream_full_name, fork_owner, branch_name)
+            if exists:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO pr_submissions (issue_id, run_id, pr_url, pr_number, submitted_at, disclosure_text)
+                        VALUES (%s, %s, %s, %s, now(), %s)
+                        ON CONFLICT (issue_id) DO UPDATE SET
+                            pr_url = EXCLUDED.pr_url,
+                            pr_number = EXCLUDED.pr_number;
+                        UPDATE issues SET status = 'submitted', updated_at = now() WHERE id = %s;
+                    """, (issue_id, run_id, existing_url, existing_num, disclosure_text, issue_id))
+                conn.commit()
+                return
+
+        # If unrecoverable (e.g. no diff between head and base), mark skipped to prevent infinite loop
         print(f"  Failed to submit PR for issue #{issue_num}: {sanitized_err}", file=sys.stderr)
+        with conn.cursor() as cur:
+            cur.execute("UPDATE issues SET status = 'skipped', updated_at = now() WHERE id = %s", (issue_id,))
+        conn.commit()
 
 
 def get_authenticated_session():

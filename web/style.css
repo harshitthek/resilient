@@ -1,26 +1,26 @@
 /* 
- * Resilient Leaderboard CSS — Premium Dark Slate Glassmorphism & High-Contrast Visual Design
+ * Resilient Leaderboard CSS — Enterprise Dark Slate & Cyan/Teal Palette (Vector SVG Icons)
  */
 
 :root {
-    --bg-main: #0b0f19;
+    --bg-main: #090d16;
     --bg-gradient-top: #0f172a;
-    --bg-gradient-bottom: #090d16;
+    --bg-gradient-bottom: #080c14;
 
-    --card-bg: rgba(15, 23, 42, 0.88);
-    --card-border: rgba(255, 255, 255, 0.12);
-    --card-hover-border: rgba(99, 102, 241, 0.5);
+    --card-bg: rgba(15, 23, 42, 0.92);
+    --card-border: rgba(148, 163, 184, 0.12);
+    --card-hover-border: rgba(6, 182, 212, 0.5);
 
     --text-primary: #ffffff;
     --text-secondary: #cbd5e1;
     --text-muted: #94a3b8;
 
-    --accent-cyan: #38bdf8;
-    --accent-violet: #a855f7;
-    --accent-indigo: #6366f1;
-    --accent-amber: #fbbf24;
-    --accent-emerald: #34d399;
+    --accent-cyan: #06b6d4;
+    --accent-teal: #14b8a6;
+    --accent-emerald: #10b981;
+    --accent-amber: #f59e0b;
     --accent-rose: #f43f5e;
+    --accent-indigo: #6366f1;
 
     --glass-blur: blur(24px);
     --font-heading: 'Outfit', sans-serif;
@@ -37,8 +37,8 @@
 body {
     background-color: var(--bg-main);
     background-image: 
-        radial-gradient(at 10% 10%, rgba(30, 27, 75, 0.5) 0px, transparent 60%),
-        radial-gradient(at 90% 90%, rgba(49, 16, 66, 0.4) 0px, transparent 60%),
+        radial-gradient(at 10% 10%, rgba(14, 116, 144, 0.25) 0px, transparent 60%),
+        radial-gradient(at 90% 90%, rgba(16, 185, 129, 0.2) 0px, transparent 60%),
         linear-gradient(180deg, var(--bg-gradient-top) 0%, var(--bg-gradient-bottom) 100%);
     background-attachment: fixed;
     color: var(--text-primary);
@@ -57,7 +57,7 @@ body {
     height: 100vh;
     z-index: 0;
     pointer-events: none;
-    opacity: 0.5;
+    opacity: 0.45;
 }
 
 .app-container {
@@ -81,7 +81,7 @@ body {
 
 .glass-card:hover {
     border-color: var(--card-hover-border);
-    box-shadow: 0 12px 40px 0 rgba(99, 102, 241, 0.25);
+    box-shadow: 0 12px 40px 0 rgba(6, 182, 212, 0.2);
     transform: translateY(-2px);
 }
 
@@ -91,7 +91,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 16px 28px;
-    background: rgba(15, 23, 42, 0.92);
+    background: rgba(15, 23, 42, 0.94);
     backdrop-filter: var(--glass-blur);
     border: 1px solid var(--card-border);
     border-radius: 20px;
@@ -106,8 +106,16 @@ body {
 }
 
 .logo-icon {
-    font-size: 28px;
-    filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.6));
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(6, 182, 212, 0.15);
+    border: 1px solid rgba(6, 182, 212, 0.4);
+    color: var(--accent-cyan);
+    box-shadow: 0 0 16px rgba(6, 182, 212, 0.3);
 }
 
 .logo-text h1 {
@@ -140,8 +148,8 @@ body {
     font-weight: 600;
     padding: 6px 16px;
     border-radius: 20px;
-    background: rgba(52, 211, 153, 0.15);
-    border: 1px solid rgba(52, 211, 153, 0.4);
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.4);
     color: var(--accent-emerald);
 }
 
@@ -155,9 +163,9 @@ body {
 }
 
 @keyframes pulse {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
-    70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(52, 211, 153, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
 .btn {
@@ -201,15 +209,15 @@ body {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25));
-    border: 1px solid rgba(168, 85, 247, 0.4);
-    color: #e0e7ff;
+    background: rgba(6, 182, 212, 0.15);
+    border: 1px solid rgba(6, 182, 212, 0.4);
+    color: var(--accent-cyan);
     margin-bottom: 14px;
 }
 
 .hero-title {
     font-family: var(--font-heading);
-    font-size: 42px;
+    font-size: 40px;
     font-weight: 800;
     line-height: 1.2;
     color: #ffffff;
@@ -238,9 +246,8 @@ body {
 }
 
 .kpi-icon {
-    font-size: 26px;
-    width: 52px;
-    height: 52px;
+    width: 50px;
+    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -249,10 +256,10 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.kpi-icon.violet { background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.3); }
-.kpi-icon.cyan { background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.3); }
-.kpi-icon.amber { background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.3); }
-.kpi-icon.emerald { background: rgba(52, 211, 153, 0.15); border-color: rgba(52, 211, 153, 0.3); }
+.kpi-icon.teal { background: rgba(20, 184, 166, 0.15); border-color: rgba(20, 184, 166, 0.4); color: var(--accent-teal); }
+.kpi-icon.cyan { background: rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.4); color: var(--accent-cyan); }
+.kpi-icon.emerald { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: var(--accent-emerald); }
+.kpi-icon.amber { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: var(--accent-amber); }
 
 .kpi-value {
     font-family: var(--font-heading);
@@ -282,9 +289,15 @@ body {
     margin-bottom: 20px;
 }
 
+.section-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .section-header h2 {
     font-family: var(--font-heading);
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 700;
     color: #ffffff;
 }
@@ -348,8 +361,8 @@ body {
     color: #fff;
 }
 
-.rank-badge.rank-1 { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 0 12px rgba(245, 158, 11, 0.5); }
-.rank-badge.rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: #fff; }
+.rank-badge.rank-1 { background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; box-shadow: 0 0 12px rgba(6, 182, 212, 0.5); }
+.rank-badge.rank-2 { background: linear-gradient(135deg, #64748b, #475569); color: #fff; }
 
 .model-name {
     font-family: var(--font-mono);
@@ -369,7 +382,7 @@ body {
 
 .progress-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent-indigo), var(--accent-cyan));
+    background: linear-gradient(90deg, var(--accent-teal), var(--accent-cyan));
     border-radius: 4px;
 }
 
@@ -439,15 +452,15 @@ body {
     font-weight: 700;
 }
 
-.badge-success { background: rgba(52, 211, 153, 0.2); color: var(--accent-emerald); border: 1px solid rgba(52, 211, 153, 0.4); }
+.badge-success { background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.4); }
 .badge-failed { background: rgba(244, 63, 94, 0.2); color: var(--accent-rose); border: 1px solid rgba(244, 63, 94, 0.4); }
 
 .btn-diff {
     width: 100%;
     padding: 10px;
     border-radius: 10px;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3));
-    border: 1px solid rgba(168, 85, 247, 0.5);
+    background: rgba(6, 182, 212, 0.15);
+    border: 1px solid rgba(6, 182, 212, 0.4);
     color: #ffffff;
     font-size: 13px;
     font-weight: 700;
@@ -457,8 +470,8 @@ body {
 }
 
 .btn-diff:hover {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(168, 85, 247, 0.5));
-    border-color: rgba(168, 85, 247, 0.8);
+    background: rgba(6, 182, 212, 0.3);
+    border-color: var(--accent-cyan);
     transform: translateY(-1px);
 }
 
@@ -498,7 +511,7 @@ body {
 .repo-item, .activity-item {
     padding: 16px 20px;
     border-radius: 12px;
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     justify-content: space-between;
@@ -516,9 +529,9 @@ body {
     font-weight: 700;
     padding: 3px 8px;
     border-radius: 6px;
-    background: rgba(56, 189, 248, 0.2);
+    background: rgba(6, 182, 212, 0.2);
     color: var(--accent-cyan);
-    border: 1px solid rgba(56, 189, 248, 0.4);
+    border: 1px solid rgba(6, 182, 212, 0.4);
 }
 
 /* Modal Overlay */

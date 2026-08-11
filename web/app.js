@@ -172,8 +172,8 @@ function initRadarChart(leaderboardData) {
             85 - idx * 10,
             90 - idx * 15,
         ],
-        borderColor: idx === 0 ? "#00f2fe" : "#8a2be2",
-        backgroundColor: idx === 0 ? "rgba(0, 242, 254, 0.25)" : "rgba(138, 43, 226, 0.25)",
+        borderColor: idx === 0 ? "#06b6d4" : "#10b981",
+        backgroundColor: idx === 0 ? "rgba(6, 182, 212, 0.25)" : "rgba(16, 185, 129, 0.25)",
         pointBackgroundColor: "#ffffff",
     }));
 

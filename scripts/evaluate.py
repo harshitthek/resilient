@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 
 import psycopg2
 
-from github_utils import GITHUB_API, create_github_session, gh_get
+from github_utils import GITHUB_API, create_github_session, gh_get, sanitize_token
 
 DB_URL = ""
 DISPATCH_TOKEN = ""
@@ -99,13 +99,13 @@ def detect_and_run_tests(work_dir: str, language: str = None):
         passed = (proc.returncode == 0)
         output = (proc.stdout + "\n" + proc.stderr).strip()
         summary = output[-1000:] if len(output) > 1000 else output
-        return passed, summary if summary else f"Command '{' '.join(cmd)}' exited with code {proc.returncode}"
+        return passed, sanitize_token(summary if summary else f"Command '{' '.join(cmd)}' exited with code {proc.returncode}")
     except subprocess.TimeoutExpired:
         return False, f"Test execution timed out after {TEST_TIMEOUT_SECONDS}s"
     except FileNotFoundError:
         return None, f"Test runner executable '{cmd[0]}' not installed on system"
     except Exception as exc:
-        return False, f"Test execution failed: {exc}"
+        return False, sanitize_token(f"Test execution failed: {exc}")
 
 
 def assess_code_quality(work_dir: str):
@@ -120,8 +120,14 @@ def assess_code_quality(work_dir: str):
     try:
         diff_proc = subprocess.run(
             ["git", "diff", "HEAD~1..HEAD"],
-            cwd=work_dir, capture_output=True, text=True, check=True
+            cwd=work_dir, capture_output=True, text=True
         )
+        if diff_proc.returncode != 0:
+            diff_proc = subprocess.run(
+                ["git", "diff-tree", "--root", "-p", "HEAD"],
+                cwd=work_dir, capture_output=True, text=True
+            )
+
         diff_text = diff_proc.stdout
         diff_lines = len(diff_text.splitlines())
         notes["diff_lines"] = diff_lines
@@ -142,6 +148,12 @@ def assess_code_quality(work_dir: str):
             ["git", "diff", "--name-only", "HEAD~1..HEAD"],
             cwd=work_dir, capture_output=True, text=True
         )
+        if stat_proc.returncode != 0:
+            stat_proc = subprocess.run(
+                ["git", "diff-tree", "--root", "--name-only", "-r", "HEAD"],
+                cwd=work_dir, capture_output=True, text=True
+            )
+
         changed_files = [f.strip() for f in stat_proc.stdout.splitlines() if f.strip()]
         notes["changed_files"] = changed_files
 
@@ -154,6 +166,10 @@ def assess_code_quality(work_dir: str):
                     notes["syntax_valid"] = False
                     notes["findings"].append(f"Syntax error in {f}: {syn_err.msg} (line {syn_err.lineno})")
                     score -= 0.40
+                except UnicodeDecodeError:
+                    notes["syntax_valid"] = False
+                    notes["findings"].append(f"Encoding error in {f}: File is not valid UTF-8")
+                    score -= 0.20
 
     except Exception as exc:
         notes["findings"].append(f"Diff evaluation warning: {exc}")
@@ -191,8 +207,9 @@ def evaluate_run(conn, session, run_row):
             capture_output=True, text=True, timeout=120
         )
         if clone_proc.returncode != 0:
-            print(f"Failed to clone branch '{branch_name}': {clone_proc.stderr}", file=sys.stderr)
-            tests_passed, test_summary = False, f"Git clone failed: {clone_proc.stderr.strip()}"
+            sanitized_err = sanitize_token(clone_proc.stderr.strip())
+            print(f"Failed to clone branch '{branch_name}': {sanitized_err}", file=sys.stderr)
+            tests_passed, test_summary = False, f"Git clone failed: {sanitized_err}"
             reviewer_score, reviewer_notes = 0.0, {"findings": ["Git clone failed"]}
         else:
             tests_passed, test_summary = detect_and_run_tests(work_dir, language)

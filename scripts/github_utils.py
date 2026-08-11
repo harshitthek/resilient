@@ -58,6 +58,16 @@ def gh_get(session, url, params=None):
     raise RuntimeError(f"Gave up on {url} after repeated rate limiting")
 
 
+def sanitize_token(text: str) -> str:
+    """Redact GitHub PAT tokens and credentials from strings/error logs."""
+    if not text:
+        return ""
+    sanitized = re.sub(r"https://[^@]+@github\.com", "https://***@github.com", text)
+    sanitized = re.sub(r"gh[pousr]_[A-Za-z0-9_]{36,}", "[REDACTED_TOKEN]", sanitized)
+    return sanitized
+
+
+
 def gh_post(session, url, json=None):
     """POST with the same backoff semantics as gh_get().
 

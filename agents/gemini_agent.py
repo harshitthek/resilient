@@ -22,6 +22,7 @@ import time
 from typing import Optional
 
 from agents.base import AgentAdapter, RepoContext, RunResult
+from github_utils import sanitize_token
 
 # Lazy-import google.genai so the module can be imported for testing
 # without the SDK installed. The actual SDK is only needed at dispatch time.
@@ -311,13 +312,13 @@ def _run_agent_loop(ctx: RepoContext, work_dir: str, model_id: str) -> RunResult
         return RunResult(status="success", diff_url=diff_url)
 
     except subprocess.CalledProcessError as e:
-        error_detail = e.stderr or e.stdout or str(e)
+        error_detail = sanitize_token(e.stderr or e.stdout or str(e))
         return RunResult(status="failed", error=f"Git operation failed: {error_detail}")
     except Exception as e:
         elapsed = time.time() - start_time
         if elapsed > TIMEOUT_SECONDS:
             return RunResult(status="timeout", error=f"Timed out after {elapsed:.0f}s: {e}")
-        return RunResult(status="failed", error=f"Agent error: {e}")
+        return RunResult(status="failed", error=sanitize_token(f"Agent error: {e}"))
 
 
 def _remove_readonly(func, path, exc_info):
@@ -371,9 +372,9 @@ class GeminiAgent(AgentAdapter):
             error_msg = f"Git operation failed: {e.cmd} → {e.returncode}"
             if e.stderr:
                 error_msg += f"\n{e.stderr[:500]}"
-            return RunResult(status="failed", error=error_msg)
+            return RunResult(status="failed", error=sanitize_token(error_msg))
         except Exception as e:
-            return RunResult(status="failed", error=f"Dispatch failed: {e}")
+            return RunResult(status="failed", error=sanitize_token(f"Dispatch failed: {e}"))
         finally:
             # Clean up the temporary clone
             if work_dir and os.path.exists(work_dir):

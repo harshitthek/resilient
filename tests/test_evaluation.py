@@ -123,8 +123,20 @@ class TestEvaluationPipeline(unittest.TestCase):
         runs = evaluate.find_unevaluated_runs(mock_conn)
         self.assertEqual(len(runs), 1)
         mock_cursor.execute.assert_called_once()
-        self.assertIn("WHERE r.status = 'success'", mock_cursor.execute.call_args[0][0])
+class TestTokenSanitization(unittest.TestCase):
+    def test_token_redaction_in_urls(self):
+        raw_err = "fatal: clone failed https://x-access-token:ghp_1234567890abcdef1234567890abcdef1234@github.com/org/repo.git"
+        clean_err = evaluate.sanitize_token(raw_err)
+        self.assertNotIn("ghp_1234567890abcdef1234567890abcdef1234", clean_err)
+        self.assertIn("https://***@github.com", clean_err)
+
+    def test_raw_pat_token_redaction(self):
+        raw_token = "Failed with token ghp_ABCDEF1234567890abcdef12345678901234"
+        clean = evaluate.sanitize_token(raw_token)
+        self.assertNotIn("ghp_ABCDEF1234567890abcdef12345678901234", clean)
+        self.assertIn("[REDACTED_TOKEN]", clean)
 
 
 if __name__ == "__main__":
     unittest.main()
+

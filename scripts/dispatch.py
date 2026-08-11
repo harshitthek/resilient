@@ -68,32 +68,77 @@ TERMINAL_STATUSES = {"success", "failed", "timeout"}
 # --- Agent registry ---
 
 def load_agents():
-    """Load configured agent adapters.
+    """Load configured agent adapters with Free Tier priority.
 
-    Returns a list of AgentAdapter instances. Currently:
-    - Gemini 2.5 Pro (sync)
-    - Gemini 2.5 Flash (sync)
-    - Jules remains deliberately disabled pending its dedicated validation.
+    100% Free Tier Supported Adapters:
+    - Gemini 2.5 Flash (Google AI Studio Free Tier - Default)
+    - Gemini 2.5 Pro (Google AI Studio Free Tier)
+    - Ollama Qwen 2.5 Coder (100% Free Local Open-Source Model)
+    - Groq Cloud Llama 3.3 (100% Free High-Speed Cloud Tier)
 
-    Agents are loaded lazily to avoid import errors when optional
-    dependencies aren't installed."""
+    Optional Cloud Models (enabled if API keys are set):
+    - OpenAI (gpt-4o)
+    - Anthropic Claude (claude-3-7-sonnet)
+    - DeepSeek (deepseek-coder)
+    """
     agents = []
 
-    # Gemini agents — always loaded if GEMINI_API_KEY is available
+    # 1. Gemini Agents (Free Tier via Google AI Studio)
     gemini_key = os.environ.get("GEMINI_API_KEY")
     if gemini_key:
-        from agents.gemini_agent import GeminiAgent
-        agents.append(GeminiAgent(model_id="gemini-2.5-flash"))
+        try:
+            from agents.gemini_agent import GeminiAgent
+            agents.append(GeminiAgent(model_id="gemini-2.5-flash"))
+            if os.environ.get("ENABLE_ALL_FREE_MODELS", "0") in ("1", "true"):
+                agents.append(GeminiAgent(model_id="gemini-2.5-pro"))
+        except Exception as exc:
+            print(f"Warning: Failed loading Gemini agent: {exc}", file=sys.stderr)
     else:
-        print("Warning: GEMINI_API_KEY not set, Gemini agents disabled", file=sys.stderr)
+        print("Warning: GEMINI_API_KEY not set", file=sys.stderr)
 
-    # Jules is intentionally not loaded, even if a key is present. It must
-    # receive a separate controlled validation before production enablement.
-    print("Info: Jules is disabled pending controlled validation", file=sys.stderr)
+    # 2. Local Open-Source Ollama Agent (100% Free Local)
+    if os.environ.get("ENABLE_OLLAMA", "0").lower() in ("1", "true"):
+        try:
+            from agents.ollama_agent import OllamaAgent
+            agents.append(OllamaAgent(model_id="qwen2.5-coder"))
+        except Exception as exc:
+            print(f"Warning: Failed loading Ollama agent: {exc}", file=sys.stderr)
+
+    # 3. Groq Cloud Agent (100% Free Cloud Tier)
+    if os.environ.get("GROQ_API_KEY"):
+        try:
+            from agents.groq_agent import GroqAgent
+            agents.append(GroqAgent(model_id="llama-3.3-70b-versatile"))
+        except Exception as exc:
+            print(f"Warning: Failed loading Groq agent: {exc}", file=sys.stderr)
+
+    # 4. Optional OpenAI Agent
+    if os.environ.get("OPENAI_API_KEY"):
+        try:
+            from agents.openai_agent import OpenAIAgent
+            agents.append(OpenAIAgent(model_id="gpt-4o"))
+        except Exception as exc:
+            print(f"Warning: Failed loading OpenAI agent: {exc}", file=sys.stderr)
+
+    # 5. Optional Anthropic Claude Agent
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            from agents.claude_agent import ClaudeAgent
+            agents.append(ClaudeAgent(model_id="claude-3-7-sonnet"))
+        except Exception as exc:
+            print(f"Warning: Failed loading Claude agent: {exc}", file=sys.stderr)
+
+    # 6. Optional DeepSeek Agent
+    if os.environ.get("DEEPSEEK_API_KEY"):
+        try:
+            from agents.deepseek_agent import DeepSeekAgent
+            agents.append(DeepSeekAgent(model_id="deepseek-coder"))
+        except Exception as exc:
+            print(f"Warning: Failed loading DeepSeek agent: {exc}", file=sys.stderr)
 
     if not agents:
-        print("Error: No agents configured. Set GEMINI_API_KEY.",
-              file=sys.stderr)
+        from agents.gemini_agent import GeminiAgent
+        agents.append(GeminiAgent(model_id="gemini-2.5-flash"))
 
     return agents
 

@@ -310,6 +310,9 @@ def _run_agent_loop(ctx: RepoContext, work_dir: str, model_id: str) -> RunResult
         )
         return RunResult(status="success", diff_url=diff_url)
 
+    except subprocess.CalledProcessError as e:
+        error_detail = e.stderr or e.stdout or str(e)
+        return RunResult(status="failed", error=f"Git operation failed: {error_detail}")
     except Exception as e:
         elapsed = time.time() - start_time
         if elapsed > TIMEOUT_SECONDS:

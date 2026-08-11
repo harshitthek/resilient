@@ -79,7 +79,7 @@ class TestGeminiDispatch(unittest.TestCase):
         with patch.dict(os.environ, {"GEMINI_API_KEY": "test", "JULES_API_KEY": "test"}):
             agents = dispatch.load_agents()
 
-        self.assertEqual([agent.name for agent in agents], ["gemini-2.5-pro", "gemini-2.5-flash"])
+        self.assertEqual([agent.name for agent in agents], ["gemini-2.5-flash"])
 
 
 class TestRunErrorPersistence(unittest.TestCase):

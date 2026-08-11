@@ -83,7 +83,6 @@ def load_agents():
     gemini_key = os.environ.get("GEMINI_API_KEY")
     if gemini_key:
         from agents.gemini_agent import GeminiAgent
-        agents.append(GeminiAgent(model_id="gemini-2.5-pro"))
         agents.append(GeminiAgent(model_id="gemini-2.5-flash"))
     else:
         print("Warning: GEMINI_API_KEY not set, Gemini agents disabled", file=sys.stderr)

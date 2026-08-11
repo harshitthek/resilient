@@ -12,29 +12,25 @@ function initThreeJSBackground() {
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 30;
+    camera.position.z = 40;
 
     const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    // Particle Sphere Geometry
-    const particleCount = 1200;
+    // Soft, subtle particle starfield
+    const particleCount = 600;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
 
-    const color1 = new THREE.Color("#6366f1");
-    const color2 = new THREE.Color("#00f2fe");
+    const color1 = new THREE.Color("#4f46e5");
+    const color2 = new THREE.Color("#06b6d4");
 
     for (let i = 0; i < particleCount; i++) {
-        const radius = 15 + Math.random() * 20;
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos((Math.random() * 2) - 1);
-
-        positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-        positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-        positions[i * 3 + 2] = radius * Math.cos(phi);
+        positions[i * 3] = (Math.random() - 0.5) * 120;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 120;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 80;
 
         const mixedColor = color1.clone().lerp(color2, Math.random());
         colors[i * 3] = mixedColor.r;
@@ -45,26 +41,38 @@ function initThreeJSBackground() {
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
+    // Texture generator for smooth round glowing points (no sharp blocky squares)
+    const canvasTexture = document.createElement('canvas');
+    canvasTexture.width = 16;
+    canvasTexture.height = 16;
+    const ctxTexture = canvasTexture.getContext('2d');
+    const grad = ctxTexture.createRadialGradient(8, 8, 0, 8, 8, 8);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.4, 'rgba(99,102,241,0.6)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctxTexture.fillStyle = grad;
+    ctxTexture.fillRect(0, 0, 16, 16);
+    const texture = new THREE.CanvasTexture(canvasTexture);
+
     const material = new THREE.PointsMaterial({
-        size: 0.7,
+        size: 1.2,
+        map: texture,
         vertexColors: true,
         transparent: true,
-        opacity: 0.65,
+        opacity: 0.35,
+        depthWrite: false,
         blending: THREE.AdditiveBlending,
     });
 
     const particleSystem = new THREE.Points(geometry, material);
     scene.add(particleSystem);
 
-    // Mouse & Scroll Parallax
     let mouseX = 0;
     let mouseY = 0;
-    let targetX = 0;
-    let targetY = 0;
 
     document.addEventListener("mousemove", (e) => {
-        mouseX = (e.clientX - window.innerWidth / 2) * 0.0005;
-        mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
+        mouseX = (e.clientX - window.innerWidth / 2) * 0.0002;
+        mouseY = (e.clientY - window.innerHeight / 2) * 0.0002;
     });
 
     window.addEventListener("resize", () => {
@@ -73,16 +81,10 @@ function initThreeJSBackground() {
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Animation Loop
     function animate() {
         requestAnimationFrame(animate);
-
-        targetX += (mouseX - targetX) * 0.05;
-        targetY += (mouseY - targetY) * 0.05;
-
-        particleSystem.rotation.y += 0.0012 + targetX * 0.1;
-        particleSystem.rotation.x += 0.0008 + targetY * 0.1;
-
+        particleSystem.rotation.y += 0.0005 + mouseX * 0.05;
+        particleSystem.rotation.x += 0.0003 + mouseY * 0.05;
         renderer.render(scene, camera);
     }
     animate();

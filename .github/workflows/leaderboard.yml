@@ -1,0 +1,40 @@
+name: Leaderboard API & Web Benchmark
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Run every 6 hours
+  workflow_dispatch:        # Manual trigger
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+          cache-dependency-path: 'scripts/requirements-*.txt'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements-dispatch.txt
+          pip install fastapi uvicorn httpx pytest pydantic
+
+      - name: Run Leaderboard API Unit Tests
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          pytest -v tests/test_api.py
+
+      - name: Verify Web Dashboard Static Files
+        run: |
+          test -f web/index.html
+          test -f web/style.css
+          test -f web/app.js
+          echo "Web dashboard assets verified successfully."

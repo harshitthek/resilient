@@ -89,11 +89,11 @@ until it has its own controlled validation.
 
 | Stage | Status |
 |---|---|
-| Discovery | ✅ Built and reviewed |
-| Dispatch | ✅ Built; Gemini-only execution is enabled, Jules is disabled pending validation |
-| Evaluation | ✅ Built & Tested (40 unit tests passing) |
-| Submission | ✅ Built & Tested (`scripts/submit.py`, GitHub App & PAT auth) |
-| Leaderboard | 📋 Specified in `ROADMAP.md` |
+| Discovery | ✅ Built & Live Verified (`scripts/discover.py`) |
+| Dispatch | ✅ Built & Live Verified (`scripts/dispatch.py`, Gemini 2.5 Flash) |
+| Evaluation | ✅ Built & Tested (`scripts/evaluate.py`) |
+| Submission | ✅ Built & Live Verified (`scripts/submit.py`, resilient-bot GitHub App) |
+| Leaderboard | ✅ Built & Tested (`api/main.py` REST API + `web/` 3D Web Dashboard, 47 unit tests passing) |
 
 See `CONTEXT.md` for design decisions and `ROADMAP.md` for the remaining
 leaderboard work.

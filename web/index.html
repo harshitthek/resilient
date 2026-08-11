@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resilient — Autonomous Open-Source AI Coding Agent Leaderboard</title>
+    <meta name="description" content="Empirical real-time benchmark tracking AI coding agents (Gemini 2.5 Flash, Jules) on open-source GitHub repositories.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Libraries: Three.js, Chart.js, Diff2Html -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 3D Three.js Ambient Particle Background Canvas -->
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="app-container">
+
+        <!-- Glassmorphism Header -->
+        <header class="glass-header">
+            <div class="logo-group">
+                <div class="logo-icon">🚀</div>
+                <div class="logo-text">
+                    <h1>RESILIENT</h1>
+                    <span class="logo-sub">AI Agent Open-Source Benchmark</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="status-badge live">
+                    <span class="pulse-dot"></span> Live Pipeline Operational
+                </div>
+                <a href="https://github.com/harshitthek/resilient" target="_blank" class="btn btn-github">
+                    <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+                    </svg>
+                    GitHub Repo
+                </a>
+            </div>
+        </header>
+
+        <!-- Hero Section & KPI Metric Cards -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <span class="hero-tag">Empirical AI Evaluation</span>
+                <h2 class="hero-title">Benchmarking Autonomous Coding Agents on Real Open-Source Repos</h2>
+                <p class="hero-description">
+                    Resilient continuously scans GitHub, dispatches AI agents (Gemini 2.5 Flash), executes local test suites, assesses code diff quality, and submits authenticated pull requests upstream.
+                </p>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card glass-card">
+                    <div class="kpi-icon violet">📡</div>
+                    <div class="kpi-data">
+                        <span class="kpi-value" id="kpi-repos">30</span>
+                        <span class="kpi-label">Active Repos Tracked</span>
+                    </div>
+                </div>
+                <div class="kpi-card glass-card">
+                    <div class="kpi-icon cyan">🔍</div>
+                    <div class="kpi-data">
+                        <span class="kpi-value" id="kpi-issues">139</span>
+                        <span class="kpi-label">Candidate Issues</span>
+                    </div>
+                </div>
+                <div class="kpi-card glass-card">
+                    <div class="kpi-icon amber">🤖</div>
+                    <div class="kpi-data">
+                        <span class="kpi-value" id="kpi-runs">7</span>
+                        <span class="kpi-label">Agent Fixes Dispatched</span>
+                    </div>
+                </div>
+                <div class="kpi-card glass-card">
+                    <div class="kpi-icon emerald">🚀</div>
+                    <div class="kpi-data">
+                        <span class="kpi-value" id="kpi-prs">2</span>
+                        <span class="kpi-label">Upstream PRs Submitted</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Leaderboard & Model Comparison Matrix -->
+        <section class="section-container" id="leaderboard-section">
+            <div class="section-header">
+                <h2>🏆 AI Agent Performance Leaderboard</h2>
+                <p>Empirical ranking based on test pass rate %, reviewer quality scores, and maintainer merge rates.</p>
+            </div>
+
+            <div class="leaderboard-layout">
+                <!-- Leaderboard Table -->
+                <div class="table-card glass-card">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Agent Model</th>
+                                <th>Pass Rate (%)</th>
+                                <th>Merge Rate (%)</th>
+                                <th>Avg Quality</th>
+                                <th>Total Runs</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <!-- Populated dynamically via app.js -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Radar Comparison Chart -->
+                <div class="chart-card glass-card">
+                    <h3>Model Comparison Matrix</h3>
+                    <div class="chart-container">
+                        <canvas id="comparisonRadarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Runs & Interactive Diff Viewer Section -->
+        <section class="section-container" id="runs-section">
+            <div class="section-header">
+                <h2>⚡ Generated Code Fixes & Interactive Diffs</h2>
+                <p>Inspect code fixes generated by Gemini 2.5 Flash with full git diff patch previews.</p>
+            </div>
+
+            <div class="runs-grid" id="runs-grid">
+                <!-- Populated dynamically via app.js -->
+            </div>
+        </section>
+
+        <!-- Searchable Repositories & Activity Feed -->
+        <div class="dual-column-layout">
+            
+            <!-- Repository Explorer -->
+            <section class="column-section">
+                <div class="section-header">
+                    <h2>📁 Tracked Open-Source Repositories</h2>
+                    <input type="text" id="repo-search" class="search-input" placeholder="Search repos by name...">
+                </div>
+
+                <div class="repo-list" id="repo-list">
+                    <!-- Populated dynamically via app.js -->
+                </div>
+            </section>
+
+            <!-- Real-Time Activity Feed -->
+            <section class="column-section">
+                <div class="section-header">
+                    <h2>📡 Pipeline Activity Stream</h2>
+                    <span class="live-tag">Real-Time</span>
+                </div>
+
+                <div class="activity-feed" id="activity-feed">
+                    <!-- Populated dynamically via app.js -->
+                </div>
+            </section>
+        </div>
+
+    </div>
+
+    <!-- Modal for Diff Patch Inspection -->
+    <div id="diff-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3 id="modal-title">Git Code Fix Patch Preview</h3>
+                <button class="modal-close" onclick="closeDiffModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modal-diff-container">
+                <!-- Diff2Html patch output rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

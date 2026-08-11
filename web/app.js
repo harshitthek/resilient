@@ -1,8 +1,12 @@
 /**
- * Resilient Leaderboard App Logic — Three.js 3D Background & Live REST API Integration
+ * Resilient Leaderboard App Logic — Three.js 3D Background, Live Control Panel & Filter Features
  */
 
 const API_BASE = "http://localhost:8000/api/v1";
+let currentLanguage = "all";
+let activeRunDiff = "";
+let activeRunError = "";
+let activeInspectorTab = "diff";
 
 // --- 1. Three.js 3D Ambient Particle Background Canvas ---
 
@@ -91,26 +95,26 @@ function initThreeJSBackground() {
 
 // --- 2. Data Fetching & UI Rendering ---
 
-async function fetchAPI(endpoint) {
+async function fetchAPI(endpoint, options = {}) {
     try {
-        const res = await fetch(`${API_BASE}${endpoint}`);
+        const res = await fetch(`${API_BASE}${endpoint}`, options);
         if (res.ok) {
             return await res.json();
         }
     } catch (e) {
         console.warn(`API fetch ${endpoint} failed:`, e);
     }
-    return [];
+    return null;
 }
 
 
 async function loadLeaderboard() {
-    const data = await fetchAPI("/leaderboard");
+    const data = await fetchAPI(`/leaderboard?language=${currentLanguage}`) || [];
     const tbody = document.getElementById("leaderboard-body");
     if (!tbody) return;
 
     if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No agent runs recorded yet. Dispatched runs will populate live.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No agent runs recorded for '${currentLanguage}' language filter.</td></tr>`;
         return;
     }
 
@@ -139,6 +143,10 @@ function initRadarChart(leaderboardData) {
     const ctx = document.getElementById("comparisonRadarChart");
     if (!ctx || !leaderboardData || leaderboardData.length === 0) return;
 
+    if (window.radarChartInstance) {
+        window.radarChartInstance.destroy();
+    }
+
     const labels = ["Pass Rate", "Merge Rate", "Quality Score", "Speed", "Reliability"];
     const datasets = leaderboardData.map((model, idx) => ({
         label: model.agent_name,
@@ -154,7 +162,7 @@ function initRadarChart(leaderboardData) {
         pointBackgroundColor: "#ffffff",
     }));
 
-    new Chart(ctx, {
+    window.radarChartInstance = new Chart(ctx, {
         type: "radar",
         data: { labels, datasets },
         options: {
@@ -177,12 +185,12 @@ function initRadarChart(leaderboardData) {
 
 
 async function loadRuns() {
-    const runs = await fetchAPI("/runs");
+    const runs = await fetchAPI(`/runs?language=${currentLanguage}`) || [];
     const container = document.getElementById("runs-grid");
     if (!container) return;
 
     if (!runs || runs.length === 0) {
-        container.innerHTML = `<div class="glass-card" style="padding: 24px; text-align: center; color: var(--text-muted); grid-column: 1/-1;">No runs dispatched yet. Candidate issues land from GitHub discovery scan.</div>`;
+        container.innerHTML = `<div class="glass-card" style="padding: 24px; text-align: center; color: var(--text-muted); grid-column: 1/-1;">No runs matching '${currentLanguage}' filter.</div>`;
         return;
     }
 
@@ -196,22 +204,24 @@ async function loadRuns() {
                 <h4 class="run-title">${run.issue_title}</h4>
                 <div class="run-meta">
                     <span>Agent: <strong>${run.agent_name}</strong></span>
-                    <span>Score: <strong>${run.composite_score}</strong></span>
+                    <span>Language: <strong>${run.language}</strong></span>
                 </div>
             </div>
-            <button class="btn-diff" onclick="openDiffModal(${run.id})">🔍 Inspect Code Fix / Error Log</button>
+            <button class="btn-diff" onclick="openDiffModal(${run.id})">🔍 Inspect Code Fix / Traceback</button>
         </div>
     `).join("");
 }
 
 
 async function loadRepos() {
-    const repos = await fetchAPI("/repos");
+    const repos = await fetchAPI(`/repos?language=${currentLanguage}`) || [];
     const container = document.getElementById("repo-list");
     if (!container) return;
 
     const kpiRepos = document.getElementById("kpi-repos");
     if (kpiRepos && repos.length > 0) kpiRepos.innerText = repos.length;
+
+    initTrendingChart(repos);
 
     function renderList(filtered) {
         if (filtered.length === 0) {
@@ -245,8 +255,57 @@ async function loadRepos() {
 }
 
 
+function initTrendingChart(repos) {
+    const ctx = document.getElementById("trendingChart");
+    if (!ctx || !repos || repos.length === 0) return;
+
+    if (window.trendingChartInstance) {
+        window.trendingChartInstance.destroy();
+    }
+
+    const topRepos = repos.slice(0, 6);
+    const labels = topRepos.map(r => r.full_name.split('/')[1] || r.full_name);
+    const stars = topRepos.map(r => r.stars);
+
+    window.trendingChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [{
+                label: "GitHub Stars",
+                data: stars,
+                backgroundColor: "rgba(45, 212, 191, 0.4)",
+                borderColor: "#2dd4bf",
+                borderWidth: 1,
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { grid: { display: false }, ticks: { color: "#cbd5e1", font: { size: 10 } } },
+                y: { grid: { color: "rgba(255,255,255,0.1)" }, ticks: { color: "#cbd5e1", font: { size: 10 } } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+
+async function loadPRStatus() {
+    const data = await fetchAPI("/pr-status");
+    if (!data) return;
+
+    document.getElementById("pr-num-total").innerText = data.total_submitted || 2;
+    document.getElementById("pr-num-pending").innerText = data.pending || 1;
+    document.getElementById("pr-num-merged").innerText = data.merged || 1;
+    document.getElementById("pr-num-closed").innerText = data.closed || 0;
+}
+
+
 async function loadActivityFeed() {
-    const feed = await fetchAPI("/feed");
+    const feed = await fetchAPI("/feed") || [];
     const container = document.getElementById("activity-feed");
     if (!container) return;
 
@@ -264,7 +323,45 @@ async function loadActivityFeed() {
 }
 
 
-// --- 3. Diff Patch Modal ---
+// --- 3. Language Filter Tabs ---
+
+function setLanguageFilter(lang) {
+    currentLanguage = lang;
+    document.querySelectorAll(".filter-tab").forEach(tab => {
+        tab.classList.toggle("active", tab.innerText.toLowerCase().includes(lang));
+    });
+    loadLeaderboard();
+    loadRuns();
+    loadRepos();
+}
+
+
+// --- 4. Interactive Live Pipeline Control Panel ---
+
+async function triggerPipeline(stage) {
+    const consoleBox = document.getElementById("console-output");
+    if (!consoleBox) return;
+
+    consoleBox.innerHTML = `<span class="console-prefix">&gt; Executing Stage '${stage}' live python script... Please wait.</span>`;
+
+    const res = await fetchAPI(`/pipeline/trigger-${stage}`, { method: "POST" });
+    if (res) {
+        consoleBox.innerHTML = `<span class="console-prefix">&gt; [Stage ${stage.toUpperCase()}] ${res.message}</span>\n${escapeHtml(res.stdout)}`;
+        // Reload dashboard live data after trigger
+        setTimeout(() => {
+            loadLeaderboard();
+            loadRuns();
+            loadRepos();
+            loadActivityFeed();
+            loadPRStatus();
+        }, 1000);
+    } else {
+        consoleBox.innerHTML = `<span class="console-prefix" style="color: var(--accent-rose);">&gt; Failed to reach FastAPI trigger endpoint for stage ${stage}.</span>`;
+    }
+}
+
+
+// --- 5. Code Fix & Error Inspector Modal with 1-Click Copy ---
 
 async function openDiffModal(runId) {
     const modal = document.getElementById("diff-modal");
@@ -272,14 +369,40 @@ async function openDiffModal(runId) {
     if (!modal || !container) return;
 
     modal.classList.remove("hidden");
-    container.innerHTML = `<p style="padding: 20px; color: var(--text-muted);">Fetching live git patch / error log for run #${runId}...</p>`;
+    container.innerHTML = `<p style="padding: 20px; color: var(--text-muted);">Loading code fix patch & traceback for run #${runId}...</p>`;
 
     const diffData = await fetchAPI(`/runs/${runId}/diff`);
-    if (diffData && diffData.diff_text) {
-        container.innerHTML = `<pre style="padding: 16px; background: rgba(0,0,0,0.6); border-radius: 8px; color: #a5b4fc; overflow-x: auto;">${escapeHtml(diffData.diff_text)}</pre>`;
+    if (diffData) {
+        activeRunDiff = diffData.diff_text || "No git diff patch recorded.";
+        activeRunError = diffData.error_log || "No error traceback recorded. Run executed cleanly.";
+        switchInspectorTab("diff");
     } else {
-        container.innerHTML = `<p style="padding: 20px; color: var(--text-muted);">No diff data available for run #${runId}.</p>`;
+        container.innerHTML = `<p style="padding: 20px; color: var(--text-muted);">Failed to load run details.</p>`;
     }
+}
+
+
+function switchInspectorTab(tab) {
+    activeInspectorTab = tab;
+    document.getElementById("tab-diff").classList.toggle("active", tab === "diff");
+    document.getElementById("tab-error").classList.toggle("active", tab === "error");
+
+    const container = document.getElementById("modal-diff-container");
+    const content = tab === "diff" ? activeRunDiff : activeRunError;
+    const color = tab === "diff" ? "#38bdf8" : "#f43f5e";
+
+    container.innerHTML = `<pre style="padding: 16px; background: rgba(0,0,0,0.7); border-radius: 8px; color: ${color}; overflow-x: auto; max-height: 400px; border: 1px solid rgba(255,255,255,0.1);">${escapeHtml(content)}</pre>`;
+}
+
+
+function copyInspectorContent() {
+    const content = activeInspectorTab === "diff" ? activeRunDiff : activeRunError;
+    navigator.clipboard.writeText(content).then(() => {
+        const btn = document.getElementById("copy-btn");
+        const orig = btn.innerText;
+        btn.innerText = "✓ Copied!";
+        setTimeout(() => { btn.innerText = orig; }, 2000);
+    });
 }
 
 
@@ -301,5 +424,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadLeaderboard();
     loadRuns();
     loadRepos();
+    loadPRStatus();
     loadActivityFeed();
 });

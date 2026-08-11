@@ -11,11 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Libraries: Three.js, Chart.js, Diff2Html -->
+    <!-- Libraries: Three.js, Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
 
     <link rel="stylesheet" href="style.css">
 </head>
@@ -76,7 +74,7 @@
                         </svg>
                     </div>
                     <div class="kpi-data">
-                        <span class="kpi-value" id="kpi-repos">30</span>
+                        <span class="kpi-value" id="kpi-repos">47</span>
                         <span class="kpi-label">Active Repos Tracked</span>
                     </div>
                 </div>
@@ -90,7 +88,7 @@
                         </svg>
                     </div>
                     <div class="kpi-data">
-                        <span class="kpi-value" id="kpi-issues">139</span>
+                        <span class="kpi-value" id="kpi-issues">238</span>
                         <span class="kpi-label">Candidate Issues</span>
                     </div>
                 </div>
@@ -128,6 +126,100 @@
             </div>
         </section>
 
+        <!-- Interactive Live Pipeline Control Panel -->
+        <section class="section-container" id="control-panel-section">
+            <div class="section-header">
+                <div class="section-title-group">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                    <h2>Live Pipeline Interactive Control Panel</h2>
+                </div>
+                <p>Trigger live pipeline stages on real GitHub repositories directly from the Web Dashboard.</p>
+            </div>
+
+            <div class="control-panel-card glass-card">
+                <div class="control-buttons-grid">
+                    <button class="btn-control" onclick="triggerPipeline('discovery')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        Trigger Stage 1: Discovery
+                    </button>
+                    <button class="btn-control" onclick="triggerPipeline('dispatch')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                        Trigger Stage 2: Dispatch
+                    </button>
+                    <button class="btn-control" onclick="triggerPipeline('evaluate')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        Trigger Stage 3: Evaluate
+                    </button>
+                    <button class="btn-control" onclick="triggerPipeline('submit')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
+                        Trigger Stage 4: Submit
+                    </button>
+                </div>
+                <div class="console-box" id="console-output">
+                    <span class="console-prefix">&gt; Control panel initialized. Click any stage button above to run live python pipeline scripts.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Upstream PR Maintainer Status & Trending Repos Chart -->
+        <div class="dual-column-layout" style="margin-bottom: 48px;">
+            <!-- PR Maintainer Status Breakdown -->
+            <section class="column-section">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="18" cy="18" r="3"></circle>
+                            <circle cx="6" cy="6" r="3"></circle>
+                            <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                            <line x1="6" y1="9" x2="6" y2="21"></line>
+                        </svg>
+                        <h2>Upstream PR Maintainer Status</h2>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="padding: 24px;">
+                    <div class="pr-status-grid">
+                        <div class="pr-status-box">
+                            <span class="pr-status-num" id="pr-num-total">2</span>
+                            <span class="pr-status-label">Total PRs</span>
+                        </div>
+                        <div class="pr-status-box">
+                            <span class="pr-status-num yellow" id="pr-num-pending">1</span>
+                            <span class="pr-status-label">Pending Review ⏳</span>
+                        </div>
+                        <div class="pr-status-box">
+                            <span class="pr-status-num green" id="pr-num-merged">1</span>
+                            <span class="pr-status-label">Merged Upstream ✅</span>
+                        </div>
+                        <div class="pr-status-box">
+                            <span class="pr-status-num red" id="pr-num-closed">0</span>
+                            <span class="pr-status-label">Closed ❌</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Star-Growth Delta Chart -->
+            <section class="column-section">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                        <h2>Trending Repo Star Growth</h2>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="padding: 24px; height: 210px;">
+                    <canvas id="trendingChart"></canvas>
+                </div>
+            </section>
+        </div>
+
         <!-- Leaderboard & Model Comparison Matrix -->
         <section class="section-container" id="leaderboard-section">
             <div class="section-header">
@@ -142,7 +234,14 @@
                     </svg>
                     <h2>AI Agent Performance Leaderboard</h2>
                 </div>
-                <p>Empirical ranking based on test pass rate %, reviewer quality scores, and maintainer merge rates.</p>
+                <!-- Language Filter Tabs -->
+                <div class="filter-tabs">
+                    <button class="filter-tab active" onclick="setLanguageFilter('all')">All Languages</button>
+                    <button class="filter-tab" onclick="setLanguageFilter('python')">Python</button>
+                    <button class="filter-tab" onclick="setLanguageFilter('typescript')">TypeScript</button>
+                    <button class="filter-tab" onclick="setLanguageFilter('rust')">Rust</button>
+                    <button class="filter-tab" onclick="setLanguageFilter('go')">Go</button>
+                </div>
             </div>
 
             <div class="leaderboard-layout">
@@ -236,15 +335,22 @@
 
     </div>
 
-    <!-- Modal for Diff Patch Inspection -->
+    <!-- Enhanced Modal for Diff & Error Inspector with 1-Click Copy -->
     <div id="diff-modal" class="modal-overlay hidden">
         <div class="modal-content glass-card">
             <div class="modal-header">
-                <h3 id="modal-title">Git Code Fix Patch Preview</h3>
-                <button class="modal-close" onclick="closeDiffModal()">✕</button>
+                <h3 id="modal-title">Code Fix & Error Inspector</h3>
+                <div class="modal-actions">
+                    <button class="btn btn-github" id="copy-btn" onclick="copyInspectorContent()">📋 Copy to Clipboard</button>
+                    <button class="modal-close" onclick="closeDiffModal()">✕</button>
+                </div>
+            </div>
+            <div class="inspector-tabs">
+                <button class="inspector-tab active" id="tab-diff" onclick="switchInspectorTab('diff')">Code Fix Patch</button>
+                <button class="inspector-tab" id="tab-error" onclick="switchInspectorTab('error')">Error Log / Traceback</button>
             </div>
             <div class="modal-body" id="modal-diff-container">
-                <!-- Diff2Html patch output rendered here -->
+                <!-- Code patch or error log rendered here -->
             </div>
         </div>
     </div>

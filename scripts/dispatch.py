@@ -293,7 +293,11 @@ def mode2_dispatch_new_issues(conn, session, agents):
                 existing_fork=existing_fork,
             )
         except Exception as exc:
-            conn.rollback()
+            try:
+                if conn and not getattr(conn, 'closed', True):
+                    conn.rollback()
+            except Exception:
+                pass
             print(f"  FAILED {full_name}#{issue_number}: {exc}", file=sys.stderr)
 
 
@@ -427,7 +431,11 @@ def dispatch_one_issue(conn, session, agents, *, issue_id, repo_id,
             print(f"    {agent.name} → {result.status}", file=sys.stderr)
 
         except Exception as exc:
-            conn.rollback()
+            try:
+                if conn and not getattr(conn, 'closed', True):
+                    conn.rollback()
+            except Exception:
+                pass
             # Agent-level failure: log and continue to next agent.
             # If the run row was committed (after the conn.commit() above),
             # it persists with status=running/pending and will be caught by

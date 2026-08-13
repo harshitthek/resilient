@@ -16,6 +16,12 @@ import sys
 import time
 from datetime import datetime, timezone
 
+try:
+    import dotenv
+    dotenv.load_dotenv()
+except ImportError:
+    pass
+
 import psycopg2
 
 from github_utils import (

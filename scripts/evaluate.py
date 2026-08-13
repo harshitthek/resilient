@@ -22,6 +22,12 @@ import tempfile
 import time
 from datetime import datetime, timezone
 
+try:
+    import dotenv
+    dotenv.load_dotenv()
+except ImportError:
+    pass
+
 import psycopg2
 
 from github_utils import GITHUB_API, create_github_session, gh_get, sanitize_token

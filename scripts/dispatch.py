@@ -28,6 +28,12 @@ is explicitly tolerated per the locked contracts.
 import os
 import sys
 import importlib
+
+try:
+    import dotenv
+    dotenv.load_dotenv()
+except ImportError:
+    pass
 from datetime import datetime, timezone, timedelta
 
 import psycopg2
@@ -544,7 +550,7 @@ def main():
     global DB_URL, DISPATCH_TOKEN
     # Validate required env vars (module-level uses .get for testability)
     DB_URL = os.environ.get("DATABASE_URL", "").strip()
-    DISPATCH_TOKEN = os.environ.get("GITHUB_DISPATCH_TOKEN", "").strip()
+    DISPATCH_TOKEN = os.environ.get("GITHUB_DISPATCH_TOKEN", "").strip() or os.environ.get("GITHUB_TOKEN", "").strip() or os.environ.get("DISCOVERY_GH_TOKEN", "").strip() or os.environ.get("GITHUB_SCAN_TOKEN", "").strip()
     if not DB_URL:
         print("Error: DATABASE_URL not set", file=sys.stderr)
         sys.exit(1)

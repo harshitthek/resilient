@@ -25,6 +25,12 @@ import re
 import sys
 from datetime import datetime, timedelta, timezone
 
+try:
+    import dotenv
+    dotenv.load_dotenv()
+except ImportError:
+    pass
+
 import psycopg2
 
 from github_utils import (
@@ -52,7 +58,7 @@ def fetch_github_trending_repos() -> list[str]:
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     session = SESSION or create_github_session("")
     try:
-        resp = session.get("https://github.com/trending", headers=headers, timeout=15)
+        resp = session.get("https://github.com/trending?since=daily", headers=headers, timeout=15)
         if resp.status_code != 200:
             return []
         matches = re.findall(r'<h2[^>]*class="[^"]*h3[^"]*"[^>]*>\s*<a[^>]*href="/([^"]+)"', resp.text)
@@ -138,7 +144,7 @@ def find_candidate_repos():
 
 
 def recent_cutoff():
-    return (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d")
+    return (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
 
 
 def fetch_open_issues(full_name):
@@ -248,11 +254,11 @@ def process_repo(conn, repo_json):
 def _configure_from_env():
     """Load and validate required runtime configuration."""
     global TOKEN, DB_URL, SESSION
-    TOKEN = os.environ.get("GITHUB_SCAN_TOKEN", "").strip()
+    TOKEN = os.environ.get("GITHUB_SCAN_TOKEN", "").strip() or os.environ.get("GITHUB_TOKEN", "").strip() or os.environ.get("DISCOVERY_GH_TOKEN", "").strip()
     DB_URL = os.environ.get("DATABASE_URL", "").strip()
     missing = [
         name for name, value in (
-            ("GITHUB_SCAN_TOKEN", TOKEN),
+            ("GITHUB_SCAN_TOKEN/GITHUB_TOKEN", TOKEN),
             ("DATABASE_URL", DB_URL),
         ) if not value
     ]

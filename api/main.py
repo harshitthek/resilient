@@ -13,16 +13,18 @@ import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-import dotenv
+try:
+    import dotenv
+    dotenv.load_dotenv()
+except ImportError:
+    pass
+
 import psycopg2
 import psycopg2.extras
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-
-# Load environment variables from .env
-dotenv.load_dotenv()
 
 # Ensure scripts directory is importable
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))

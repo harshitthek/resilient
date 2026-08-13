@@ -56,6 +56,23 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agents.base import RepoContext, RunResult
 
 
+def ensure_connection(conn, db_url):
+    """Ensure database connection is alive; reconnect if closed/dropped."""
+    try:
+        if conn is None or getattr(conn, 'closed', 1) != 0:
+            return psycopg2.connect(db_url)
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1;")
+        return conn
+    except Exception:
+        try:
+            if conn:
+                conn.close()
+        except Exception:
+            pass
+        return psycopg2.connect(db_url)
+
+
 # --- Configuration ---
 # Read at module level with defaults so the module can be imported for
 # testing without all env vars set. main() validates required vars.
@@ -286,6 +303,7 @@ def mode2_dispatch_new_issues(conn, session, agents):
     for (issue_id, repo_id, issue_number, title,
          full_name, default_branch, language, existing_fork) in candidates:
         try:
+            conn = ensure_connection(conn, DB_URL)
             print(f"\n  Processing: {full_name}#{issue_number} ({title[:60]})",
                   file=sys.stderr)
             dispatch_one_issue(

@@ -49,6 +49,11 @@ SESSION = None
 TARGET_LABELS = {"bug", "good first issue", "help wanted"}
 
 MIN_STARS = 500        # floor so we're not scanning noise
+MAX_STARS = 5000       # target small & medium creators on daily trending with high merge acceptance
+EXCLUDED_REPOS = {
+    "ollama/ollama", "openclaw/openclaw", "torvalds/linux", "facebook/react",
+    "vuejs/vue", "tensorflow/tensorflow", "flutter/flutter", "microsoft/vscode"
+}
 SCAN_PAGE_SIZE = 30
 MAX_REPOS_PER_RUN = 60  # cost/rate-limit guardrail
 
@@ -133,10 +138,18 @@ def find_candidate_repos():
     # Fetch full repo JSON metadata via GitHub API for each discovered name
     full_repos = []
     for full_name in candidate_names[:MAX_REPOS_PER_RUN]:
+        if full_name in EXCLUDED_REPOS:
+            print(f"Skipping excluded mega-repo: {full_name}", file=sys.stderr)
+            continue
         try:
             r = gh_get(SESSION, f"{GITHUB_API}/repos/{full_name}")
             if r.status_code == 200:
-                full_repos.append(r.json())
+                repo_data = r.json()
+                stars = repo_data.get("stargazers_count", 0)
+                if stars > MAX_STARS:
+                    print(f"Skipping repo exceeding star cap ({stars} > {MAX_STARS}): {full_name}", file=sys.stderr)
+                    continue
+                full_repos.append(repo_data)
         except Exception as exc:
             print(f"Failed to fetch metadata for {full_name}: {exc}", file=sys.stderr)
 

@@ -289,6 +289,7 @@ def mode2_dispatch_new_issues(conn, session, agents):
             JOIN repos r ON r.id = i.repo_id
             WHERE i.status = 'discovered'
               AND r.is_active = TRUE
+              AND r.stars <= 5000
             ORDER BY i.discovered_at DESC, r.stars DESC
             LIMIT %s
         """, (MAX_ISSUES_PER_RUN,))

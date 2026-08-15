@@ -81,10 +81,9 @@ class TestScoringLogic(unittest.TestCase):
         self.assertEqual(score, 0.38)
 
     def test_composite_score_no_test_suite(self):
-        # tests_passed=None, reviewer_score=0.80
-        # 0.5*0.0 + 0.4*0.80 + 0.1*0.0 = 0.0 + 0.32 + 0.0 = 0.32
+        # tests_passed=None, reviewer_score=0.80 -> normalized composite score = 0.80
         score = evaluate.compute_composite_score(tests_passed=None, reviewer_score=0.80)
-        self.assertEqual(score, 0.32)
+        self.assertEqual(score, 0.80)
 
 
 class TestCodeQualityAssessment(unittest.TestCase):

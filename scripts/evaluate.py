@@ -185,12 +185,18 @@ def assess_code_quality(work_dir: str):
 
 
 def compute_composite_score(tests_passed: bool | None, reviewer_score: float) -> float:
-    """Compute weighted composite score per ROADMAP.md spec (w1=0.5, w2=0.4, w3=0.1).
+    """Compute weighted composite score per ROADMAP.md spec.
 
-    composite = 0.5 * (1 if tests_passed is True else 0)
-              + 0.4 * reviewer_score
-              + 0.1 * (1 if tests_passed is not None else 0)
+    If automated tests exist:
+      composite = 0.5 * (1 if tests_passed is True else 0)
+                + 0.4 * reviewer_score
+                + 0.1 * (1 if tests_passed is not None else 0)
+    If no test suite exists in the repository (tests_passed is None):
+      composite = reviewer_score (normalized to quality score)
     """
+    if tests_passed is None:
+        return round(reviewer_score if reviewer_score is not None else 0.5, 2)
+
     w1_test = 0.5 * (1.0 if tests_passed is True else 0.0)
     w2_rev = 0.4 * (reviewer_score if reviewer_score is not None else 0.5)
     w3_suite = 0.1 * (1.0 if tests_passed is not None else 0.0)

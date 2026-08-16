@@ -66,7 +66,8 @@ class GroqAgent(AgentAdapter):
                     data=payload,
                     headers={
                         "Content-Type": "application/json",
-                        "Authorization": f"Bearer {self.api_key}"
+                        "Authorization": f"Bearer {self.api_key}",
+                        "User-Agent": "Resilient-Pipeline/1.0"
                     }
                 )
                 with urllib.request.urlopen(req, timeout=120) as response:

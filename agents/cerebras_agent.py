@@ -1,11 +1,8 @@
 """
-OpenRouter Agent Adapter for Resilient Benchmark Pipeline.
+Cerebras Cloud Inference Agent Adapter for Resilient Benchmark Pipeline.
 
-100% FREE Tier OpenRouter Models:
-- 'google/gemini-2.5-flash:free'
-- 'deepseek/deepseek-r1:free'
-- 'meta-llama/llama-3.3-70b-instruct:free'
-- 'qwen/qwen-2.5-coder-32b-instruct:free'
+Ultra-Fast Cloud Inference Tier (2000+ tokens/sec) via Cerebras API.
+Supports models: 'llama-3.3-70b', 'llama3.1-8b'.
 """
 
 import json
@@ -20,26 +17,25 @@ from typing import Optional
 from agents.base import AgentAdapter, RepoContext, RunResult
 
 
-class OpenRouterAgent(AgentAdapter):
-    def __init__(self, model_id: str = "qwen/qwen-2.5-coder-32b-instruct:free", api_key: Optional[str] = None):
+class CerebrasAgent(AgentAdapter):
+    def __init__(self, model_id: str = "llama-3.3-70b", api_key: Optional[str] = None):
         self.model_id = model_id
-        self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY", "")
+        self.api_key = api_key or os.environ.get("CEREBRAS_API_KEY", "")
 
     @property
     def name(self) -> str:
-        clean_name = self.model_id.replace("/", "_").replace(":free", "")
-        return f"openrouter/{clean_name}"
+        return f"cerebras/{self.model_id}"
 
     @property
     def is_async(self) -> bool:
         return False
 
     def dispatch(self, ctx: RepoContext) -> RunResult:
-        """Synchronous dispatch using OpenRouter Free Tier API."""
+        """Synchronous dispatch using Cerebras Ultra-Fast Cloud API."""
         if not self.api_key:
-            return RunResult(status="failed", error="OPENROUTER_API_KEY environment variable not set")
+            return RunResult(status="failed", error="CEREBRAS_API_KEY environment variable not set")
 
-        work_dir = tempfile.mkdtemp(prefix=f"resilient_openrouter_{ctx.issue_number}_")
+        work_dir = tempfile.mkdtemp(prefix=f"resilient_cerebras_{ctx.issue_number}_")
         try:
             # 1. Clone target fork branch
             cmd = ["git", "clone", "--depth", "1", "--branch", ctx.branch_name, ctx.clone_url, work_dir]
@@ -47,9 +43,9 @@ class OpenRouterAgent(AgentAdapter):
             if res.returncode != 0:
                 return RunResult(status="failed", error=f"Git clone failed: {res.stderr[:300]}")
 
-            # 2. Call OpenRouter API endpoint (OpenAI-compatible)
+            # 2. Call Cerebras Cloud API endpoint (OpenAI-compatible)
             prompt = (
-                f"You are an open-source AI coding agent fixing issue #{ctx.issue_number} in {ctx.upstream_full_name}.\n"
+                f"You are an autonomous AI coding agent fixing issue #{ctx.issue_number} in {ctx.upstream_full_name}.\n"
                 f"Issue Title: {ctx.issue_title}\n"
                 f"Issue Description:\n{ctx.issue_body}\n\n"
                 f"Generate code changes to resolve this issue cleanly."
@@ -66,13 +62,11 @@ class OpenRouterAgent(AgentAdapter):
 
             try:
                 req = urllib.request.Request(
-                    "https://openrouter.ai/api/v1/chat/completions",
+                    "https://api.cerebras.ai/v1/chat/completions",
                     data=payload,
                     headers={
                         "Content-Type": "application/json",
                         "Authorization": f"Bearer {self.api_key}",
-                        "HTTP-Referer": "https://github.com/harshitthek/resilient",
-                        "X-Title": "Resilient AI Benchmark",
                         "User-Agent": "Resilient-Pipeline/1.0"
                     }
                 )
@@ -83,7 +77,7 @@ class OpenRouterAgent(AgentAdapter):
                 # 3. Create a README/Patch file in work_dir
                 fix_file = os.path.join(work_dir, "AI_FIX_SUMMARY.md")
                 with open(fix_file, "w", encoding="utf-8") as f:
-                    f.write(f"# Resilient OpenRouter Free Tier AI Fix Summary ({self.model_id})\n\n{fix_summary}\n")
+                    f.write(f"# Resilient Cerebras High-Speed AI Fix Summary ({self.model_id})\n\n{fix_summary}\n")
 
                 # 4. Commit and push fix branch
                 subprocess.run(["git", "add", "."], cwd=work_dir, check=True)
@@ -96,10 +90,10 @@ class OpenRouterAgent(AgentAdapter):
                 return RunResult(status="success", diff_url=diff_url)
 
             except Exception as exc:
-                return RunResult(status="failed", error=f"OpenRouter API error: {str(exc)[:300]}")
+                return RunResult(status="failed", error=f"Cerebras API error: {str(exc)[:300]}")
 
         finally:
             shutil.rmtree(work_dir, ignore_errors=True)
 
     def poll(self, session_id: str) -> RunResult:
-        return RunResult(status="failed", error="poll() called on sync OpenRouter agent")
+        return RunResult(status="failed", error="poll() called on sync Cerebras agent")

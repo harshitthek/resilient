@@ -48,7 +48,12 @@ class QwenAgent(AgentAdapter):
                 f"Generate code changes to resolve this issue cleanly."
             )
             
-            headers = {"Content-Type": "application/json"}
+            headers = {
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://github.com/harshitthek/resilient",
+                "X-Title": "Resilient AI Benchmark",
+                "User-Agent": "Resilient-Pipeline/1.0"
+            }
             if self.api_key:
                 headers["Authorization"] = f"Bearer {self.api_key}"
 

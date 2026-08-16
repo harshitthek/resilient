@@ -146,7 +146,55 @@ def load_agents():
         except Exception as exc:
             print(f"Warning: Failed loading Groq agent: {exc}", file=sys.stderr)
 
-    # 4. Optional OpenAI Agent
+    # 4b. Hugging Face Serverless Free Inference Agent (100% Free - No Credit Card)
+    if os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY"):
+        try:
+            from agents.huggingface_agent import HuggingFaceAgent
+            agents.append(HuggingFaceAgent(model_id="Qwen/Qwen2.5-Coder-32B-Instruct"))
+        except Exception as exc:
+            print(f"Warning: Failed loading Hugging Face agent: {exc}", file=sys.stderr)
+
+    # 4c. Cohere Free Developer Trial Agent (100% Free - No Credit Card)
+    if os.environ.get("COHERE_API_KEY"):
+        try:
+            from agents.cohere_agent import CohereAgent
+            agents.append(CohereAgent(model_id="command-r-08-2024"))
+        except Exception as exc:
+            print(f"Warning: Failed loading Cohere agent: {exc}", file=sys.stderr)
+
+    # 4d. NVIDIA NIM / NVIDIA Build Free Developer Tier (100% Free - No Credit Card)
+    if os.environ.get("NVIDIA_API_KEY") or os.environ.get("NV_API_KEY"):
+        try:
+            from agents.nvidia_agent import NvidiaAgent
+            agents.append(NvidiaAgent(model_id="nvidia/nemotron-3.5-lightning-30b-a3b"))
+        except Exception as exc:
+            print(f"Warning: Failed loading NVIDIA agent: {exc}", file=sys.stderr)
+
+    # 5. Cerebras Cloud Agent (Ultra-Fast 2000+ tokens/sec Free Cloud Tier)
+    if os.environ.get("CEREBRAS_API_KEY"):
+        try:
+            from agents.cerebras_agent import CerebrasAgent
+            agents.append(CerebrasAgent(model_id="llama-3.3-70b"))
+        except Exception as exc:
+            print(f"Warning: Failed loading Cerebras agent: {exc}", file=sys.stderr)
+
+    # 6. SambaNova Cloud Agent (High-Speed Free Cloud Tier)
+    if os.environ.get("SAMBANOVA_API_KEY"):
+        try:
+            from agents.sambanova_agent import SambaNovaAgent
+            agents.append(SambaNovaAgent(model_id="Meta-Llama-3.3-70B-Instruct"))
+        except Exception as exc:
+            print(f"Warning: Failed loading SambaNova agent: {exc}", file=sys.stderr)
+
+    # 7. Mistral / Codestral Agent
+    if os.environ.get("MISTRAL_API_KEY") or os.environ.get("CODESTRAL_API_KEY"):
+        try:
+            from agents.mistral_agent import MistralAgent
+            agents.append(MistralAgent(model_id="codestral-latest"))
+        except Exception as exc:
+            print(f"Warning: Failed loading Mistral agent: {exc}", file=sys.stderr)
+
+    # 8. Optional OpenAI Agent
     if os.environ.get("OPENAI_API_KEY"):
         try:
             from agents.openai_agent import OpenAIAgent
@@ -154,7 +202,7 @@ def load_agents():
         except Exception as exc:
             print(f"Warning: Failed loading OpenAI agent: {exc}", file=sys.stderr)
 
-    # 5. Optional Anthropic Claude Agent
+    # 9. Optional Anthropic Claude Agent
     if os.environ.get("ANTHROPIC_API_KEY"):
         try:
             from agents.claude_agent import ClaudeAgent
@@ -162,13 +210,22 @@ def load_agents():
         except Exception as exc:
             print(f"Warning: Failed loading Claude agent: {exc}", file=sys.stderr)
 
-    # 6. Optional DeepSeek Agent
+    # 10. Optional DeepSeek Agent
     if os.environ.get("DEEPSEEK_API_KEY"):
         try:
             from agents.deepseek_agent import DeepSeekAgent
             agents.append(DeepSeekAgent(model_id="deepseek-coder"))
         except Exception as exc:
             print(f"Warning: Failed loading DeepSeek agent: {exc}", file=sys.stderr)
+
+    # 11. Quality-First Multi-Agent Tournament & Consensus Agent (Enabled when 2+ models are available)
+    has_multi_keys = sum(bool(os.environ.get(k)) for k in ("GEMINI_API_KEY", "GROQ_API_KEY", "NVIDIA_API_KEY", "COHERE_API_KEY")) >= 2
+    if (has_multi_keys or os.environ.get("ENABLE_QUALITY_TOURNAMENT") in ("1", "true")) and os.environ.get("ENABLE_QUALITY_TOURNAMENT") != "0":
+        try:
+            from agents.quality_ensemble_agent import QualityEnsembleAgent
+            agents.append(QualityEnsembleAgent())
+        except Exception as exc:
+            print(f"Warning: Failed loading Quality Ensemble agent: {exc}", file=sys.stderr)
 
     if not agents:
         from agents.gemini_agent import GeminiAgent

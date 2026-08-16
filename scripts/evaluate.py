@@ -177,6 +177,35 @@ def assess_code_quality(work_dir: str):
                     notes["findings"].append(f"Encoding error in {f}: File is not valid UTF-8")
                     score -= 0.20
 
+        # Optional Semantic AI Reviewer enhancement
+        if os.environ.get("ENABLE_AI_REVIEWER", "0") in ("1", "true") and diff_text:
+            nv_key = os.environ.get("NVIDIA_API_KEY")
+            if nv_key:
+                try:
+                    import urllib.request
+                    req = urllib.request.Request(
+                        "https://integrate.api.nvidia.com/v1/chat/completions",
+                        data=json.dumps({
+                            "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+                            "messages": [
+                                {"role": "system", "content": "You are a code reviewer. Output a JSON object: {\"quality_score_0_to_1\": <float>, \"notes\": [<str>]}"},
+                                {"role": "user", "content": f"Review this git diff for maintainability and bug risks:\n{diff_text[:1500]}"}
+                            ],
+                            "max_tokens": 200
+                        }).encode("utf-8"),
+                        headers={"Authorization": f"Bearer {nv_key}", "Content-Type": "application/json", "User-Agent": "Resilient-Pipeline/1.0"}
+                    )
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        rev_data = json.loads(resp.read().decode("utf-8"))
+                        rev_content = rev_data["choices"][0]["message"]["content"]
+                        if "{" in rev_content and "}" in rev_content:
+                            parsed_rev = json.loads(rev_content[rev_content.find("{"):rev_content.rfind("}")+1])
+                            ai_score = float(parsed_rev.get("quality_score_0_to_1", 0.85))
+                            score = (score * 0.5) + (ai_score * 0.5)
+                            notes["ai_reviewer_notes"] = parsed_rev.get("notes", [])
+                except Exception:
+                    pass
+
     except Exception as exc:
         notes["findings"].append(f"Diff evaluation warning: {exc}")
 

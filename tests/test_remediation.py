@@ -76,10 +76,57 @@ class TestGeminiDispatch(unittest.TestCase):
 
     def test_jules_is_not_loaded_even_when_its_key_exists(self):
         """Jules remains off until its separate controlled validation."""
-        with patch.dict(os.environ, {"GEMINI_API_KEY": "test", "JULES_API_KEY": "test"}):
+        with patch.dict(os.environ, {
+            "GEMINI_API_KEY": "test",
+            "JULES_API_KEY": "test",
+            "GROQ_API_KEY": "",
+            "OPENROUTER_API_KEY": "",
+            "CEREBRAS_API_KEY": "",
+            "SAMBANOVA_API_KEY": "",
+            "MISTRAL_API_KEY": "",
+            "CODESTRAL_API_KEY": "",
+            "HF_TOKEN": "",
+            "COHERE_API_KEY": "",
+            "NVIDIA_API_KEY": "",
+            "NV_API_KEY": "",
+            "OPENAI_API_KEY": "",
+            "ANTHROPIC_API_KEY": "",
+            "DEEPSEEK_API_KEY": "",
+            "ENABLE_OLLAMA": "0",
+        }):
             agents = dispatch.load_agents()
 
         self.assertEqual([agent.name for agent in agents], ["gemini-2.5-flash"])
+
+    def test_additional_model_adapters_load_when_configured(self):
+        """Cerebras, Mistral, SambaNova, Groq, HF, Cohere, and Nvidia adapters load properly."""
+        with patch.dict(os.environ, {
+            "GEMINI_API_KEY": "",
+            "CEREBRAS_API_KEY": "test_csk",
+            "SAMBANOVA_API_KEY": "test_samba",
+            "MISTRAL_API_KEY": "test_mistral",
+            "GROQ_API_KEY": "test_groq",
+            "HF_TOKEN": "test_hf",
+            "COHERE_API_KEY": "test_cohere",
+            "NVIDIA_API_KEY": "test_nvapi",
+            "OPENROUTER_API_KEY": "",
+            "OPENAI_API_KEY": "",
+            "ANTHROPIC_API_KEY": "",
+            "DEEPSEEK_API_KEY": "",
+            "ENABLE_OLLAMA": "0",
+        }):
+            agents = dispatch.load_agents()
+
+        agent_names = [agent.name for agent in agents]
+        self.assertIn("groq/llama-3.3-70b-versatile", agent_names)
+        self.assertIn("cerebras/llama-3.3-70b", agent_names)
+        self.assertIn("sambanova/Meta-Llama-3.3-70B-Instruct", agent_names)
+        self.assertIn("mistral/codestral-latest", agent_names)
+        self.assertIn("huggingface/qwen2.5-coder-32b-instruct", agent_names)
+        self.assertIn("cohere/command-r-08-2024", agent_names)
+        self.assertIn("nvidia/nvidia_nemotron-3.5-lightning-30b-a3b", agent_names)
+        self.assertIn("quality-ensemble-tournament", agent_names)
+
 
 
 class TestRunErrorPersistence(unittest.TestCase):

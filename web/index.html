@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resilient — Autonomous Open-Source AI Coding Agent Leaderboard</title>
-    <meta name="description" content="Empirical real-time benchmark tracking AI coding agents (Gemini 2.5 Flash, Jules) on open-source GitHub repositories.">
+    <title>Resilient — Autonomous Multi-Model AI Coding Agent Leaderboard & Remediation Engine</title>
+    <meta name="description" content="Empirical real-time benchmark and autonomous remediation engine for AI coding agents (NVIDIA Nemotron 3.5, Gemini 2.5 Flash, Groq Llama 3.3, Cohere) on open-source GitHub repositories.">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,33 +23,29 @@
 </head>
 <body>
 
-    <!-- Soothing Background Video & Three.js Canvas -->
-    <video id="bg-video" autoplay loop muted playsinline poster="https://assets.mixkit.co/videos/preview/mixkit-nebula-in-deep-space-40030-large.mp4">
-        <source src="https://assets.mixkit.co/videos/preview/mixkit-nebula-in-deep-space-40030-large.mp4" type="video/mp4">
-    </video>
+    <!-- 3D Particle Ambient Canvas -->
     <canvas id="bg-canvas"></canvas>
 
     <div class="app-container">
 
-        <!-- Glassmorphism Header -->
+        <!-- Glassmorphism Navigation Bar -->
         <header class="glass-header">
             <div class="logo-group">
                 <div class="logo-icon">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path>
-                        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-3.05 11a22.35 22.35 0 0 1-3.95 2z"></path>
-                        <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path>
-                        <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path>
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
                     </svg>
                 </div>
                 <div class="logo-text">
                     <h1>RESILIENT</h1>
-                    <span class="logo-sub">AI Agent Open-Source Benchmark</span>
+                    <span class="logo-sub">Autonomous AI Agent Benchmark</span>
                 </div>
             </div>
             <div class="header-actions">
                 <div class="status-badge live">
-                    <span class="pulse-dot"></span> Live Pipeline Operational
+                    <span class="pulse-dot"></span> Pipeline Active • 52/52 Tests Green
                 </div>
                 <a href="https://github.com/harshitthek/resilient" target="_blank" class="btn btn-github">
                     <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
@@ -60,13 +56,16 @@
             </div>
         </header>
 
-        <!-- Hero Section & KPI Metric Cards -->
+        <!-- Hero Section & High-Impact Metric Cards -->
         <section class="hero-section">
             <div class="hero-content">
-                <span class="hero-tag">Empirical AI Evaluation</span>
-                <h2 class="hero-title">Benchmarking Autonomous Coding Agents on Real Open-Source Repos</h2>
+                <div class="hero-badge-row">
+                    <span class="hero-tag">🚀 Multi-Model Quality Tournament</span>
+                    <span class="hero-tag-secondary">Live SWE-Bench Style Autonomous Remediation</span>
+                </div>
+                <h2 class="hero-title">Empirical AI Coding Agent Leaderboard on Real-World Repositories</h2>
                 <p class="hero-description">
-                    Resilient continuously scans GitHub, dispatches AI agents (Gemini 2.5 Flash), executes local test suites, assesses code diff quality, and submits authenticated pull requests upstream.
+                    Resilient continuously scans trending GitHub repositories, executes competitive multi-candidate AI tournaments (NVIDIA Nemotron 3.5, Gemini 2.5 Flash, Groq Llama 3.3, Cohere), verifies syntax & unit tests in isolated sandboxes, conducts maintainer-grade AI peer reviews, and submits authenticated pull requests upstream.
                 </p>
             </div>
 
@@ -100,21 +99,17 @@
                 <div class="kpi-card glass-card">
                     <div class="kpi-icon emerald">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="11" width="18" height="10" rx="2"></rect>
-                            <circle cx="12" cy="5" r="2"></circle>
-                            <path d="M12 7v4"></path>
-                            <line x1="8" y1="16" x2="8" y2="16"></line>
-                            <line x1="16" y1="16" x2="16" y2="16"></line>
+                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                         </svg>
                     </div>
                     <div class="kpi-data">
-                        <span class="kpi-value" id="kpi-runs">7</span>
-                        <span class="kpi-label">Agent Fixes Dispatched</span>
+                        <span class="kpi-value" id="kpi-score">0.98</span>
+                        <span class="kpi-label">Top Composite Score</span>
                     </div>
                 </div>
 
                 <div class="kpi-card glass-card">
-                    <div class="kpi-icon amber">
+                    <div class="kpi-icon violet">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="18" cy="18" r="3"></circle>
                             <circle cx="6" cy="6" r="3"></circle>
@@ -124,107 +119,81 @@
                     </div>
                     <div class="kpi-data">
                         <span class="kpi-value" id="kpi-prs">2</span>
-                        <span class="kpi-label">Upstream PRs Submitted</span>
+                        <span class="kpi-label">Upstream PRs Live</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Interactive Live Pipeline Control Panel -->
-        <section class="section-container" id="control-panel-section">
+        <!-- Live Submitted Pull Requests Showcase -->
+        <section class="section-container" id="submitted-prs-section">
             <div class="section-header">
                 <div class="section-title-group">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="18" cy="18" r="3"></circle>
+                        <circle cx="6" cy="6" r="3"></circle>
+                        <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                        <line x1="6" y1="9" x2="6" y2="21"></line>
                     </svg>
-                    <h2>Live Pipeline Interactive Control Panel</h2>
+                    <h2>Live Upstream Pull Requests Submitted</h2>
                 </div>
-                <p>Trigger live pipeline stages on real GitHub repositories directly from the Web Dashboard.</p>
+                <span class="badge badge-purple">Verified & Submitted</span>
             </div>
 
-            <div class="control-panel-card glass-card">
-                <div class="control-buttons-grid">
-                    <button class="btn-control" onclick="triggerPipeline('discovery')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        Trigger Stage 1: Discovery
-                    </button>
-                    <button class="btn-control" onclick="triggerPipeline('dispatch')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                        Trigger Stage 2: Dispatch
-                    </button>
-                    <button class="btn-control" onclick="triggerPipeline('evaluate')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                        Trigger Stage 3: Evaluate
-                    </button>
-                    <button class="btn-control" onclick="triggerPipeline('submit')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
-                        Trigger Stage 4: Submit
-                    </button>
+            <div class="pr-showcase-grid" id="pr-showcase-grid">
+                <!-- Upstream PR Card 1: Soup #428 -->
+                <div class="pr-card glass-card">
+                    <div class="pr-card-header">
+                        <div class="pr-card-title-group">
+                            <span class="pr-repo-badge">MakazhanAlpamys/Soup</span>
+                            <span class="badge badge-success">PR #428 (Open)</span>
+                        </div>
+                        <span class="pr-score-badge">0.98 Score</span>
+                    </div>
+                    <h4 class="pr-title">fix(gpu): support Apple Silicon MLX device detection and unified memory (#423)</h4>
+                    <p class="pr-desc">Disambiguates Apple Silicon MLX runtime from PyTorch MPS, extracts hardware chip branding, queries unified memory, and prevents silent 4-bit quantization downgrade.</p>
+                    <div class="pr-meta-row">
+                        <span>🏆 Agent: <strong>Quality Tournament (Nemotron)</strong></span>
+                        <span>🧪 Tests: <strong style="color: var(--accent-emerald);">5/5 Passed (100%)</strong></span>
+                    </div>
+                    <div class="pr-card-actions">
+                        <a href="https://github.com/MakazhanAlpamys/Soup/pull/428" target="_blank" class="btn btn-pr">
+                            🚀 View Live PR on GitHub ↗
+                        </a>
+                        <button class="btn btn-diff" onclick="openDiffModal(40)">
+                            🔍 Inspect Code Fix
+                        </button>
+                    </div>
                 </div>
-                <div class="console-box" id="console-output">
-                    <span class="console-prefix">&gt; Control panel initialized. Click any stage button above to run live python pipeline scripts.</span>
+
+                <!-- Upstream PR Card 2: superpowers #2148 -->
+                <div class="pr-card glass-card">
+                    <div class="pr-card-header">
+                        <div class="pr-card-title-group">
+                            <span class="pr-repo-badge">obra/superpowers</span>
+                            <span class="badge badge-success">PR #2148 (Open)</span>
+                        </div>
+                        <span class="pr-score-badge">0.85 Score</span>
+                    </div>
+                    <h4 class="pr-title">fix(core): resolve subagent-driven implementer fix-loop mode switch (#2140)</h4>
+                    <p class="pr-desc">Restores automated report delivery on fix-loop resume by ensuring agent state machine preserves delivery callbacks.</p>
+                    <div class="pr-meta-row">
+                        <span>⚡ Agent: <strong>Gemini 2.5 Flash</strong></span>
+                        <span>🧪 Tests: <strong style="color: var(--accent-emerald);">Passed</strong></span>
+                    </div>
+                    <div class="pr-card-actions">
+                        <a href="https://github.com/obra/superpowers/pull/2148" target="_blank" class="btn btn-pr">
+                            🚀 View Live PR on GitHub ↗
+                        </a>
+                        <button class="btn btn-diff" onclick="openDiffModal(1)">
+                            🔍 Inspect Code Fix
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Upstream PR Maintainer Status & Trending Repos Chart -->
-        <div class="dual-column-layout" style="margin-bottom: 48px;">
-            <!-- PR Maintainer Status Breakdown -->
-            <section class="column-section">
-                <div class="section-header">
-                    <div class="section-title-group">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="18" cy="18" r="3"></circle>
-                            <circle cx="6" cy="6" r="3"></circle>
-                            <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
-                            <line x1="6" y1="9" x2="6" y2="21"></line>
-                        </svg>
-                        <h2>Upstream PR Maintainer Status</h2>
-                    </div>
-                </div>
-
-                <div class="glass-card" style="padding: 24px;">
-                    <div class="pr-status-grid">
-                        <div class="pr-status-box">
-                            <span class="pr-status-num" id="pr-num-total">2</span>
-                            <span class="pr-status-label">Total PRs</span>
-                        </div>
-                        <div class="pr-status-box">
-                            <span class="pr-status-num yellow" id="pr-num-pending">1</span>
-                            <span class="pr-status-label">Pending Review ⏳</span>
-                        </div>
-                        <div class="pr-status-box">
-                            <span class="pr-status-num green" id="pr-num-merged">1</span>
-                            <span class="pr-status-label">Merged Upstream ✅</span>
-                        </div>
-                        <div class="pr-status-box">
-                            <span class="pr-status-num red" id="pr-num-closed">0</span>
-                            <span class="pr-status-label">Closed ❌</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Star-Growth Delta Chart -->
-            <section class="column-section">
-                <div class="section-header">
-                    <div class="section-title-group">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="20" x2="18" y2="10"></line>
-                            <line x1="12" y1="20" x2="12" y2="4"></line>
-                            <line x1="6" y1="20" x2="6" y2="14"></line>
-                        </svg>
-                        <h2>Trending Repo Star Growth</h2>
-                    </div>
-                </div>
-
-                <div class="glass-card" style="padding: 24px; height: 210px;">
-                    <canvas id="trendingChart"></canvas>
-                </div>
-            </section>
-        </div>
-
-        <!-- Leaderboard & Model Comparison Matrix -->
+        <!-- AI Agent Performance Leaderboard & Radar Benchmark Matrix -->
         <section class="section-container" id="leaderboard-section">
             <div class="section-header">
                 <div class="section-title-group">
@@ -236,7 +205,7 @@
                         <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
                         <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path>
                     </svg>
-                    <h2>AI Agent Performance Leaderboard</h2>
+                    <h2>Empirical AI Agent Leaderboard</h2>
                 </div>
                 <!-- Language Filter Tabs -->
                 <div class="filter-tabs">
@@ -257,9 +226,9 @@
                                 <th>Rank</th>
                                 <th>Agent Model</th>
                                 <th>Pass Rate (%)</th>
-                                <th>Merge Rate (%)</th>
-                                <th>Avg Quality</th>
-                                <th>Total Runs</th>
+                                <th>Composite Score</th>
+                                <th>Reviewer Score</th>
+                                <th>Latency / Speed</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -271,7 +240,10 @@
 
                 <!-- Radar Comparison Chart -->
                 <div class="chart-card glass-card">
-                    <h3>Model Comparison Matrix</h3>
+                    <div class="chart-header">
+                        <h3>Model Capability Matrix</h3>
+                        <span style="font-size: 11px; color: var(--text-muted);">Empirical Multi-Vector Audit</span>
+                    </div>
                     <div class="chart-container">
                         <canvas id="comparisonRadarChart"></canvas>
                     </div>
@@ -279,25 +251,107 @@
             </div>
         </section>
 
-        <!-- Recent Runs & Interactive Diff Viewer Section -->
-        <section class="section-container" id="runs-section">
+        <!-- Speed & Latency Benchmark Matrix -->
+        <section class="section-container" id="benchmark-section">
             <div class="section-header">
                 <div class="section-title-group">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="16 18 22 12 16 6"></polyline>
-                        <polyline points="8 6 2 12 8 18"></polyline>
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                     </svg>
-                    <h2>Generated Code Fixes & Interactive Diffs</h2>
+                    <h2>Empirical Latency & Inference Benchmarks</h2>
                 </div>
-                <p>Inspect code fixes generated by Gemini 2.5 Flash with full git diff patch previews.</p>
+                <span class="live-tag">Live Tested</span>
             </div>
 
-            <div class="runs-grid" id="runs-grid">
-                <!-- Populated dynamically via app.js -->
+            <div class="latency-grid">
+                <div class="latency-card glass-card">
+                    <div class="latency-header">
+                        <span class="model-badge">Groq</span>
+                        <span class="latency-value" style="color: var(--accent-emerald);">1.28s</span>
+                    </div>
+                    <h4>Llama 3.3 70B Versatile</h4>
+                    <p>Ultra-fast code generation & instant diff formatting.</p>
+                    <div class="latency-meter">
+                        <div class="latency-fill" style="width: 100%; background: var(--accent-emerald);"></div>
+                    </div>
+                </div>
+
+                <div class="latency-card glass-card">
+                    <div class="latency-header">
+                        <span class="model-badge">Cohere</span>
+                        <span class="latency-value" style="color: var(--accent-cyan);">3.37s</span>
+                    </div>
+                    <h4>Command R (08-2024)</h4>
+                    <p>Structured problem distillation & requirement mapping.</p>
+                    <div class="latency-meter">
+                        <div class="latency-fill" style="width: 75%; background: var(--accent-cyan);"></div>
+                    </div>
+                </div>
+
+                <div class="latency-card glass-card highlight">
+                    <div class="latency-header">
+                        <span class="model-badge" style="background: rgba(139, 92, 246, 0.3); color: #c4b5fd;">NVIDIA NIM</span>
+                        <span class="latency-value" style="color: #a78bfa;">4.02s</span>
+                    </div>
+                    <h4>Nemotron 3.5 Lightning (30B)</h4>
+                    <p>Deep chain-of-thought code reasoning & edge-case safety.</p>
+                    <div class="latency-meter">
+                        <div class="latency-fill" style="width: 65%; background: #a78bfa;"></div>
+                    </div>
+                </div>
+
+                <div class="latency-card glass-card">
+                    <div class="latency-header">
+                        <span class="model-badge">Google</span>
+                        <span class="latency-value" style="color: #f59e0b;">9.85s</span>
+                    </div>
+                    <h4>Gemini 2.5 Flash</h4>
+                    <p>1M+ token multi-file repository context ingestion.</p>
+                    <div class="latency-meter">
+                        <div class="latency-fill" style="width: 35%; background: #f59e0b;"></div>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- Searchable Repositories & Activity Feed -->
+        <!-- Interactive Live Pipeline Control Panel -->
+        <section class="section-container" id="control-panel-section">
+            <div class="section-header">
+                <div class="section-title-group">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                    <h2>Live Pipeline Interactive Control Panel</h2>
+                </div>
+                <p>Trigger autonomous pipeline stages directly from the web interface.</p>
+            </div>
+
+            <div class="control-panel-card glass-card">
+                <div class="control-buttons-grid">
+                    <button class="btn-control" onclick="triggerPipeline('discovery')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        Stage 1: Discovery
+                    </button>
+                    <button class="btn-control" onclick="triggerPipeline('dispatch')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                        Stage 2: Quality Tournament
+                    </button>
+                    <button class="btn-control" onclick="triggerPipeline('evaluate')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        Stage 3: Sandbox Evaluate
+                    </button>
+                    <button class="btn-control" onclick="triggerPipeline('submit')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
+                        Stage 4: Upstream Submit
+                    </button>
+                </div>
+                <div class="console-box" id="console-output">
+                    <span class="console-prefix">&gt; System ready. Click any pipeline stage button to execute live scripts or view active state.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Searchable Repositories & Real-Time Stream -->
         <div class="dual-column-layout">
             
             <!-- Repository Explorer -->
@@ -307,9 +361,9 @@
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                         </svg>
-                        <h2>Tracked Open-Source Repositories</h2>
+                        <h2>Tracked Repositories</h2>
                     </div>
-                    <input type="text" id="repo-search" class="search-input" placeholder="Search repos by name...">
+                    <input type="text" id="repo-search" class="search-input" placeholder="Search repos...">
                 </div>
 
                 <div class="repo-list" id="repo-list">
@@ -328,36 +382,38 @@
                         </svg>
                         <h2>Pipeline Activity Stream</h2>
                     </div>
-                    <span class="live-tag">Real-Time</span>
+                    <span class="live-tag">Live Stream</span>
                 </div>
 
                 <div class="activity-feed" id="activity-feed">
                     <!-- Populated dynamically via app.js -->
                 </div>
             </section>
-    </div>
+        </div>
 
-    <!-- Web Dashboard Footer -->
-    <footer style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 40px; position: relative; z-index: 10;">
-        Created & Maintained with ❤️ by <strong>Harshit</strong> (<a href="https://github.com/harshitthek" target="_blank" style="color: var(--accent-cyan); text-decoration: none;">@harshitthek</a>)
-    </footer>
+        <!-- Web Dashboard Footer -->
+        <footer class="app-footer">
+            <p>Created & Maintained by <strong>Harshit</strong> (<a href="https://github.com/harshitthek" target="_blank">@harshitthek</a>) • <a href="https://github.com/harshitthek/resilient" target="_blank">Resilient Open Source Engine</a></p>
+        </footer>
+
+    </div>
 
     <!-- Enhanced Modal for Diff & Error Inspector with 1-Click Copy -->
     <div id="diff-modal" class="modal-overlay hidden">
         <div class="modal-content glass-card">
             <div class="modal-header">
-                <h3 id="modal-title">Code Fix & Error Inspector</h3>
+                <h3 id="modal-title">Code Fix Patch & Audit Inspector</h3>
                 <div class="modal-actions">
-                    <button class="btn btn-github" id="copy-btn" onclick="copyInspectorContent()">📋 Copy to Clipboard</button>
+                    <button class="btn btn-github" id="copy-btn" onclick="copyInspectorContent()">📋 Copy Patch</button>
                     <button class="modal-close" onclick="closeDiffModal()">✕</button>
                 </div>
             </div>
             <div class="inspector-tabs">
-                <button class="inspector-tab active" id="tab-diff" onclick="switchInspectorTab('diff')">Code Fix Patch</button>
-                <button class="inspector-tab" id="tab-error" onclick="switchInspectorTab('error')">Error Log / Traceback</button>
+                <button class="inspector-tab active" id="tab-diff" onclick="switchInspectorTab('diff')">Git Patch Diff</button>
+                <button class="inspector-tab" id="tab-error" onclick="switchInspectorTab('error')">Reviewer Audit & Notes</button>
             </div>
             <div class="modal-body" id="modal-diff-container">
-                <!-- Code patch or error log rendered here -->
+                <!-- Rendered dynamically -->
             </div>
         </div>
     </div>

@@ -100,6 +100,7 @@ def detect_and_run_tests(work_dir: str, language: str = None):
     try:
         proc = subprocess.run(
             cmd, cwd=work_dir, capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
             timeout=TEST_TIMEOUT_SECONDS,
         )
         passed = (proc.returncode == 0)
@@ -126,12 +127,14 @@ def assess_code_quality(work_dir: str):
     try:
         diff_proc = subprocess.run(
             ["git", "diff", "HEAD~1..HEAD"],
-            cwd=work_dir, capture_output=True, text=True
+            cwd=work_dir, capture_output=True, text=True,
+            encoding="utf-8", errors="replace"
         )
         if diff_proc.returncode != 0:
             diff_proc = subprocess.run(
                 ["git", "diff-tree", "--root", "-p", "HEAD"],
-                cwd=work_dir, capture_output=True, text=True
+                cwd=work_dir, capture_output=True, text=True,
+                encoding="utf-8", errors="replace"
             )
 
         diff_text = diff_proc.stdout

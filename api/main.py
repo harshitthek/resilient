@@ -418,16 +418,17 @@ def get_activity_feed():
 
 # --- Interactive Pipeline Trigger Endpoints ---
 
-def _run_script(script_name: str) -> TriggerResponse:
+def _run_script(script_name: str, args: Optional[List[str]] = None, timeout: int = 360) -> TriggerResponse:
     script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts", script_name)
+    cmd = [sys.executable, script_path] + (args or [])
     try:
-        result = subprocess.run([sys.executable, script_path], capture_output=True, text=True, timeout=60)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
         output = result.stdout or result.stderr or "Execution complete"
         return TriggerResponse(
             success=(result.returncode == 0),
             stage=script_name.replace(".py", ""),
             message=f"{script_name} completed with exit code {result.returncode}",
-            stdout=output[:1000],
+            stdout=output[-1500:] if len(output) > 1500 else output,
         )
     except Exception as exc:
         return TriggerResponse(
@@ -444,8 +445,9 @@ def trigger_discovery():
 
 
 @app.post("/api/v1/pipeline/trigger-dispatch", response_model=TriggerResponse)
-def trigger_dispatch():
-    return _run_script("dispatch.py")
+def trigger_dispatch(issue_id: Optional[int] = Query(None, description="Specific issue ID to dispatch")):
+    args = ["--issue", str(issue_id)] if issue_id else []
+    return _run_script("dispatch.py", args=args)
 
 
 @app.post("/api/v1/pipeline/trigger-evaluate", response_model=TriggerResponse)

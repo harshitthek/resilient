@@ -180,8 +180,9 @@ def submit_issue(conn, session, candidate):
     print(f"Processing candidate issue #{issue_num} on {upstream_full_name} (Composite Score: {composite_score:.2f})...", file=sys.stderr)
 
     # 1. Check AI Policy
-    policy = check_ai_policy(session, upstream_full_name)
-    if policy == "disallowed":
+    policy_result = check_ai_policy(session, upstream_full_name)
+    policy_status = policy_result[0] if isinstance(policy_result, tuple) else str(policy_result)
+    if policy_status == "disallowed":
         print(f"  AI policy disallowed for {upstream_full_name}. Skipping issue #{issue_id}.", file=sys.stderr)
         with conn.cursor() as cur:
             cur.execute("UPDATE issues SET status = 'skipped', updated_at = now() WHERE id = %s", (issue_id,))
@@ -211,12 +212,12 @@ def submit_issue(conn, session, candidate):
                     disclosure_text = EXCLUDED.disclosure_text,
                     submitted_at = now();
                 UPDATE issues SET status = 'submitted' WHERE id = %s;
-            """, (issue_id, run_id, existing_url, existing_num, disclosure, issue_id))
+            """, (issue_id, run_id, existing_url, disclosure, issue_id))
         conn.commit()
         return
 
     # 4. Formulate & Submit PR
-    pr_title = f"fix: resolve issue #{issue_num} ({issue_title})"
+    pr_title = f"fix(gpu): resolve issue #{issue_num} ({issue_title})"
     pr_body, disclosure_text = build_pr_body(issue_num, issue_title, agent_name, composite_score, reviewer_score, tests_passed)
 
     try:
@@ -234,7 +235,7 @@ def submit_issue(conn, session, candidate):
                     disclosure_text = EXCLUDED.disclosure_text,
                     submitted_at = now();
                 UPDATE issues SET status = 'submitted' WHERE id = %s;
-            """, (issue_id, run_id, pr_url, pr_num, disclosure_text, issue_id))
+            """, (issue_id, run_id, pr_url, disclosure_text, issue_id))
         conn.commit()
 
     except Exception as exc:

@@ -267,17 +267,19 @@ def submit_issue(conn, session, candidate):
 
 
 def get_authenticated_session():
-    """Create GitHub Session using GitHub App (if configured) or PAT fallback."""
+    """Create GitHub Session for upstream PR submissions (prioritizing PAT for cross-repo access)."""
+    if DISPATCH_TOKEN:
+        print("Authenticated using PAT token", file=sys.stderr)
+        return create_github_session(DISPATCH_TOKEN)
     if APP_ID and APP_PRIVATE_KEY:
         try:
             token = get_app_installation_token(APP_ID, APP_PRIVATE_KEY)
             print("Authenticated using resilient-bot (GitHub App token)", file=sys.stderr)
             return create_github_session(token)
         except Exception as exc:
-            print(f"Warning: Failed GitHub App authentication, falling back to PAT: {exc}", file=sys.stderr)
+            print(f"Warning: Failed GitHub App authentication, falling back: {exc}", file=sys.stderr)
 
-    print("Authenticated using PAT token", file=sys.stderr)
-    return create_github_session(DISPATCH_TOKEN)
+    raise RuntimeError("No valid GitHub authentication token configured")
 
 
 def main():

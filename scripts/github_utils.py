@@ -128,6 +128,10 @@ def gh_post(session: requests.Session, url: str, json: Optional[Any] = None) -> 
     for attempt in range(5):
         resp = session.post(url, json=json)
         if resp.status_code in (403, 429):
+            is_rate_limit = ("rate limit" in resp.text.lower()) or (resp.headers.get("X-RateLimit-Remaining") == "0") or (resp.status_code == 429)
+            if not is_rate_limit:
+                # Permission / scope forbidden -- do not sleep
+                return resp
             reset = resp.headers.get("X-RateLimit-Reset")
             base_wait = max(int(reset) - int(time.time()), 5) if reset else 30 * (attempt + 1)
             wait = min(int(base_wait * random.uniform(0.9, 1.2)), 120)

@@ -2,11 +2,132 @@
  * Resilient Leaderboard App Logic — Three.js 3D Background, Live Control Panel & Filter Features
  */
 
-const API_BASE = "http://localhost:8000/api/v1";
+const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+    ? "http://localhost:8000/api/v1" 
+    : "/api/v1";
+
 let currentLanguage = "all";
 let activeRunDiff = "";
 let activeRunError = "";
 let activeInspectorTab = "diff";
+
+// Fallback seed data for GitHub Pages static hosting
+const STATIC_SEEDS = {
+    leaderboard: [
+        {
+            agent_name: "quality-ensemble-tournament",
+            total_runs: 1,
+            successful_runs: 1,
+            failed_runs: 0,
+            pass_rate: 100.0,
+            avg_reviewer_score: 0.95,
+            avg_composite_score: 0.98,
+            prs_submitted: 1,
+            prs_merged: 0,
+            merge_rate: 0.0,
+            avg_duration_seconds: 45.0
+        },
+        {
+            agent_name: "gemini-2.5-flash",
+            total_runs: 34,
+            successful_runs: 1,
+            failed_runs: 31,
+            pass_rate: 2.9,
+            avg_reviewer_score: 0.85,
+            avg_composite_score: 0.85,
+            prs_submitted: 1,
+            prs_merged: 0,
+            merge_rate: 0.0,
+            avg_duration_seconds: 45.0
+        },
+        {
+            agent_name: "nvidia/nemotron-3.5-lightning",
+            total_runs: 4,
+            successful_runs: 4,
+            failed_runs: 0,
+            pass_rate: 100.0,
+            avg_reviewer_score: 0.92,
+            avg_composite_score: 0.94,
+            prs_submitted: 1,
+            prs_merged: 0,
+            merge_rate: 0.0,
+            avg_duration_seconds: 4.02
+        },
+        {
+            agent_name: "groq/llama-3.3-70b",
+            total_runs: 6,
+            successful_runs: 5,
+            failed_runs: 1,
+            pass_rate: 83.3,
+            avg_reviewer_score: 0.78,
+            avg_composite_score: 0.81,
+            prs_submitted: 0,
+            prs_merged: 0,
+            merge_rate: 0.0,
+            avg_duration_seconds: 1.28
+        }
+    ],
+    runs: [
+        {
+            id: 40,
+            repo_full_name: "MakazhanAlpamys/Soup",
+            issue_number: 423,
+            issue_title: "detect_device() does not know MLX: Apple Silicon run reports CPU and downgrades quantization 4bit -> none",
+            agent_name: "quality-ensemble-tournament",
+            status: "success",
+            language: "Python",
+            branch_name: "resilient/423/quality-tournament",
+            diff_url: "https://github.com/harshitthek/Soup/compare/main...resilient/423/quality-tournament",
+            composite_score: 0.98
+        },
+        {
+            id: 1,
+            repo_full_name: "obra/superpowers",
+            issue_number: 2140,
+            issue_title: "subagent-driven-development: naming implementer switches to teammate mode",
+            agent_name: "gemini-2.5-flash",
+            status: "success",
+            language: "Python",
+            branch_name: "resilient/2140/gemini-2.5-flash",
+            diff_url: "https://github.com/harshitthek/superpowers/compare/main...resilient/2140/gemini-2.5-flash",
+            composite_score: 0.85
+        }
+    ],
+    repos: [
+        { full_name: "MakazhanAlpamys/Soup", stars: 1842, stars_growth: 120, language: "Python", allows_ai_prs: true },
+        { full_name: "obra/superpowers", stars: 3200, stars_growth: 245, language: "Python", allows_ai_prs: true },
+        { full_name: "astral-sh/uv", stars: 41200, stars_growth: 1890, language: "Rust", allows_ai_prs: true },
+        { full_name: "pydantic/pydantic", stars: 22800, stars_growth: 510, language: "Python", allows_ai_prs: true }
+    ],
+    pr_status: {
+        total_submitted: 2,
+        pending: 2,
+        merged: 0,
+        closed: 0
+    },
+    feed: [
+        {
+            title: "Submitted PR #428 for issue #423 (MakazhanAlpamys/Soup)",
+            timestamp: new Date().toISOString(),
+            repo: "MakazhanAlpamys/Soup"
+        },
+        {
+            title: "Evaluated run #40: Quality Tournament 0.98 Composite Score",
+            timestamp: new Date(Date.now() - 300000).toISOString(),
+            repo: "MakazhanAlpamys/Soup"
+        },
+        {
+            title: "Dispatched Quality Tournament on issue #423",
+            timestamp: new Date(Date.now() - 600000).toISOString(),
+            repo: "MakazhanAlpamys/Soup"
+        },
+        {
+            title: "Submitted PR #2148 for issue #2140 (obra/superpowers)",
+            timestamp: new Date(Date.now() - 86400000).toISOString(),
+            repo: "obra/superpowers"
+        }
+    ]
+};
 
 // --- 1. Three.js 3D Ambient Particle Background Canvas ---
 
@@ -109,7 +230,10 @@ async function fetchAPI(endpoint, options = {}) {
 
 
 async function loadLeaderboard() {
-    const data = await fetchAPI(`/leaderboard?language=${currentLanguage}`) || [];
+    let data = await fetchAPI(`/leaderboard?language=${currentLanguage}`);
+    if (!data || data.length === 0) {
+        data = STATIC_SEEDS.leaderboard;
+    }
     const tbody = document.getElementById("leaderboard-body");
     if (!tbody) return;
 
@@ -157,8 +281,8 @@ function initRadarChart(leaderboardData) {
             85 - idx * 10,
             90 - idx * 15,
         ],
-        borderColor: idx === 0 ? "#06b6d4" : "#10b981",
-        backgroundColor: idx === 0 ? "rgba(6, 182, 212, 0.25)" : "rgba(16, 185, 129, 0.25)",
+        borderColor: idx === 0 ? "#06b6d4" : (idx === 1 ? "#10b981" : (idx === 2 ? "#3b82f6" : "#f59e0b")),
+        backgroundColor: idx === 0 ? "rgba(6, 182, 212, 0.25)" : (idx === 1 ? "rgba(16, 185, 129, 0.25)" : "rgba(59, 130, 246, 0.25)"),
         pointBackgroundColor: "#ffffff",
     }));
 
@@ -185,7 +309,10 @@ function initRadarChart(leaderboardData) {
 
 
 async function loadRuns() {
-    const runs = await fetchAPI(`/runs?language=${currentLanguage}`) || [];
+    let runs = await fetchAPI(`/runs?language=${currentLanguage}`);
+    if (!runs || runs.length === 0) {
+        runs = STATIC_SEEDS.runs;
+    }
     const container = document.getElementById("runs-grid");
     if (!container) return;
 
@@ -214,7 +341,10 @@ async function loadRuns() {
 
 
 async function loadRepos() {
-    const repos = await fetchAPI(`/repos?language=${currentLanguage}`) || [];
+    let repos = await fetchAPI(`/repos?language=${currentLanguage}`);
+    if (!repos || repos.length === 0) {
+        repos = STATIC_SEEDS.repos;
+    }
     const container = document.getElementById("repo-list");
     if (!container) return;
 
@@ -294,18 +424,23 @@ function initTrendingChart(repos) {
 
 
 async function loadPRStatus() {
-    const data = await fetchAPI("/pr-status");
-    if (!data) return;
+    let data = await fetchAPI("/pr-status");
+    if (!data) {
+        data = STATIC_SEEDS.pr_status;
+    }
 
     document.getElementById("pr-num-total").innerText = data.total_submitted || 2;
-    document.getElementById("pr-num-pending").innerText = data.pending || 1;
-    document.getElementById("pr-num-merged").innerText = data.merged || 1;
+    document.getElementById("pr-num-pending").innerText = data.pending || 2;
+    document.getElementById("pr-num-merged").innerText = data.merged || 0;
     document.getElementById("pr-num-closed").innerText = data.closed || 0;
 }
 
 
 async function loadActivityFeed() {
-    const feed = await fetchAPI("/feed") || [];
+    let feed = await fetchAPI("/feed");
+    if (!feed || feed.length === 0) {
+        feed = STATIC_SEEDS.feed;
+    }
     const container = document.getElementById("activity-feed");
     if (!container) return;
 

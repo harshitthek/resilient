@@ -11,11 +11,16 @@ tokens with different scopes.
 """
 
 import base64
+import logging
+import random
 import re
 import sys
 import time
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 GITHUB_API = "https://api.github.com"
 
@@ -35,21 +40,23 @@ AI_POLICY_ALLOW_PATTERNS = [
 
 # --- Rate-limited HTTP ---
 
-def gh_get(session, url, params=None):
+def gh_get(session: requests.Session, url: str, params: Optional[Dict[str, Any]] = None) -> requests.Response:
     """GET with secondary-rate-limit backoff.
 
     A 404 is returned as-is rather than raised -- it's a legitimate,
     expected response for things like 'this repo has no CONTRIBUTING.md'.
 
-    403/429 trigger exponential backoff (up to 5 attempts).
+    403/429 trigger exponential backoff with jitter (up to 5 attempts).
     Other errors raise via raise_for_status()."""
     for attempt in range(5):
         resp = session.get(url, params=params)
         if resp.status_code in (403, 429):
             reset = resp.headers.get("X-RateLimit-Reset")
-            wait = max(int(reset) - int(time.time()), 5) if reset else 30 * (attempt + 1)
+            base_wait = max(int(reset) - int(time.time()), 5) if reset else 30 * (attempt + 1)
+            wait = min(int(base_wait * random.uniform(0.9, 1.2)), 120)
+            logger.warning(f"Rate limited on {url}, sleeping {wait}s")
             print(f"Rate limited on {url}, sleeping {wait}s", file=sys.stderr)
-            time.sleep(min(wait, 120))
+            time.sleep(wait)
             continue
         if resp.status_code == 404:
             return resp
@@ -73,7 +80,7 @@ def get_app_installation_token(app_id: str, private_key_pem: str, owner: str = N
     now = int(time.time())
     payload = {
         "iat": now - 60,
-        "exp": now + (10 * 60),
+        "exp": now + (9 * 60),
         "iss": str(app_id).strip(),
     }
     formatted_pem = private_key_pem.strip().replace("\\n", "\n")
@@ -112,24 +119,21 @@ def get_app_installation_token(app_id: str, private_key_pem: str, owner: str = N
 
 
 
-def gh_post(session, url, json=None):
+def gh_post(session: requests.Session, url: str, json: Optional[Any] = None) -> requests.Response:
     """POST with the same backoff semantics as gh_get().
 
     Returns the response on success (2xx) or 404.
-    Backs off on 403/429 (rate limiting).
-    Raises on other errors.
-
-    NOTE: Unlike GET, POST operations may have side effects that survive
-    a retry. Callers that care about idempotency (fork creation, branch
-    creation) must handle that at their own level -- this function only
-    handles rate limiting."""
+    Backs off on 403/429 (rate limiting) with randomized jitter.
+    Raises on other errors."""
     for attempt in range(5):
         resp = session.post(url, json=json)
         if resp.status_code in (403, 429):
             reset = resp.headers.get("X-RateLimit-Reset")
-            wait = max(int(reset) - int(time.time()), 5) if reset else 30 * (attempt + 1)
+            base_wait = max(int(reset) - int(time.time()), 5) if reset else 30 * (attempt + 1)
+            wait = min(int(base_wait * random.uniform(0.9, 1.2)), 120)
+            logger.warning(f"Rate limited on POST {url}, sleeping {wait}s")
             print(f"Rate limited on POST {url}, sleeping {wait}s", file=sys.stderr)
-            time.sleep(min(wait, 120))
+            time.sleep(wait)
             continue
         if resp.status_code == 404:
             return resp
@@ -151,7 +155,7 @@ def gh_post(session, url, json=None):
 
 # --- AI policy checking ---
 
-def check_ai_policy(session, full_name):
+def check_ai_policy(session: requests.Session, full_name: str) -> Tuple[str, Optional[str], Optional[str]]:
     """Best-effort keyword check against common policy locations.
 
     Returns (status, source_file, snippet) where status is one of:
@@ -182,7 +186,7 @@ def check_ai_policy(session, full_name):
 
 # --- Linked PR check ---
 
-def has_linked_pr(session, full_name, issue_number):
+def has_linked_pr(session: requests.Session, full_name: str, issue_number: int) -> bool:
     """Check whether an issue already has a linked pull request.
 
     Uses the search API to find PRs that reference the issue. This is
@@ -211,7 +215,7 @@ def has_linked_pr(session, full_name, issue_number):
 
 # --- Fork management ---
 
-def ensure_fork(session, upstream_full_name):
+def ensure_fork(session: requests.Session, upstream_full_name: str) -> str:
     """Create or reuse our fork of the upstream repo.
 
     Idempotent: if the fork already exists, returns it without error.
@@ -245,6 +249,7 @@ def ensure_fork(session, upstream_full_name):
             # Fork exists but it's not a fork of the expected repo --
             # this is unusual but possible if the user has a same-named
             # repo. Let it through with a warning.
+            logger.warning(f"{username}/{repo} exists but parent is {parent.get('full_name')}, not {upstream_full_name}")
             print(f"Warning: {username}/{repo} exists but parent is "
                   f"{parent.get('full_name')}, not {upstream_full_name}",
                   file=sys.stderr)
@@ -263,7 +268,7 @@ def ensure_fork(session, upstream_full_name):
 
 # --- Branch management ---
 
-def get_default_branch_sha(session, full_name, default_branch="main"):
+def get_default_branch_sha(session: requests.Session, full_name: str, default_branch: str = "main") -> str:
     """Get the SHA of the tip of the default branch.
 
     Returns the SHA string on success.
@@ -277,7 +282,7 @@ def get_default_branch_sha(session, full_name, default_branch="main"):
     return resp.json()["object"]["sha"]
 
 
-def create_branch(session, fork_full_name, branch_name, base_sha):
+def create_branch(session: requests.Session, fork_full_name: str, branch_name: str, base_sha: str) -> str:
     """Create a branch on the fork from the given base SHA.
 
     Safe against retries: if the branch already exists and points to
@@ -340,7 +345,7 @@ def create_branch(session, fork_full_name, branch_name, base_sha):
 
 # --- Session factory ---
 
-def create_github_session(token):
+def create_github_session(token: str) -> requests.Session:
     """Create a requests.Session configured for the GitHub API.
 
     Each caller (discovery, dispatch) should create their own session

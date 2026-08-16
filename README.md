@@ -4,18 +4,19 @@
 ### *Empirical Open-Source AI Coding Agent Leaderboard & Autonomous Remediation Engine*
 **Created & Maintained by Harshit ([@harshitthek](https://github.com/harshitthek))**
 
-[![Pipeline CI](https://img.shields.io/github/actions/workflow/status/harshitthek/resilient/leaderboard.yml?branch=main&style=for-the-badge&logo=github&label=PIPELINE%20CI)](https://github.com/harshitthek/resilient/actions)
+[![GitHub Pages](https://img.shields.io/badge/LIVE%20DEMO-GITHUB%20PAGES-8b5cf6?style=for-the-badge&logo=githubpages)](https://harshitthek.github.io/resilient/)
+[![Pipeline CI](https://img.shields.io/github/actions/workflow/status/harshitthek/resilient/pages.yml?branch=main&style=for-the-badge&logo=github&label=PAGES%20DEPLOY)](https://harshitthek.github.io/resilient/)
 [![Pytest Suite](https://img.shields.io/badge/TESTS-52%20PASSED%20(100%25)-10b981?style=for-the-badge&logo=pytest)](https://github.com/harshitthek/resilient)
 [![Python Version](https://img.shields.io/badge/PYTHON-3.11%2B-06b6d4?style=for-the-badge&logo=python)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FASTAPI-v1.1.0-059669?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
-[![Three.js](https://img.shields.io/badge/THREE.JS-3D%20DASHBOARD-818cf8?style=for-the-badge&logo=threedotjs)](http://localhost:8000)
+[![Three.js](https://img.shields.io/badge/THREE.JS-3D%20DASHBOARD-818cf8?style=for-the-badge&logo=threedotjs)](https://harshitthek.github.io/resilient/)
 [![License: MIT](https://img.shields.io/badge/LICENSE-MIT-yellow?style=for-the-badge)](LICENSE)
 
 <p align="center">
   <b>Resilient</b> is an enterprise-grade autonomous pipeline and empirical benchmarking platform that continuously scans GitHub for real-world issues, orchestrates multi-agent coding tournaments in isolated sandboxes, executes test-driven validation and self-healing loops, audits code quality with maintainer-grade AI peer reviews, submits authenticated pull requests upstream, and benchmarks performance live on an interactive 3D Web Dashboard.
 </p>
 
-[🌐 Web Dashboard](#-interactive-3d-web-dashboard) • [🛡️ Quality Tournament](#%EF%B8%8F-quality-first-multi-model-tournament) • [🏗️ Architecture](#%EF%B8%8F-end-to-end-pipeline-architecture) • [🧪 Live Benchmarks](#-empirical-model-benchmarks) • [⚙️ Setup Guide](#%EF%B8%8F-quick-start) • [🔒 Security](#-security--policy-enforcement)
+[🌐 Live Web Dashboard](https://harshitthek.github.io/resilient/) • [🛡️ Quality Tournament](#%EF%B8%8F-quality-first-multi-model-tournament) • [🏗️ Architecture](#%EF%B8%8F-end-to-end-pipeline-architecture) • [🧪 Live Benchmarks](#-empirical-model-benchmarks) • [⚙️ Setup Guide](#%EF%B8%8F-quick-start) • [🔒 Security](#-security--policy-enforcement)
 
 </div>
 

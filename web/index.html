@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resilient — Autonomous Multi-Model AI Coding Agent Leaderboard & Remediation Engine</title>
-    <meta name="description" content="Empirical real-time benchmark and autonomous remediation engine for AI coding agents (NVIDIA Nemotron 3.5, Gemini 2.5 Flash, Groq Llama 3.3, Cohere) on open-source GitHub repositories.">
+    <title>Resilient — Enterprise Autonomous AI Remediation & Benchmark Cockpit</title>
+    <meta name="description" content="High-density enterprise developer cockpit & empirical benchmark for autonomous AI coding agents (Gemini 2.5, Nemotron 3.5, Groq Llama 3.3) on real-world GitHub issues.">
     
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Libraries: Three.js, Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -17,8 +17,6 @@
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="alternate icon" href="favicon.svg">
-
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -26,394 +24,369 @@
     <!-- 3D Particle Ambient Canvas -->
     <canvas id="bg-canvas"></canvas>
 
-    <div class="app-container">
-
-        <!-- Glassmorphism Navigation Bar -->
-        <header class="glass-header">
-            <div class="logo-group">
-                <div class="logo-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                        <polyline points="2 17 12 22 22 17"></polyline>
-                        <polyline points="2 12 12 17 22 12"></polyline>
-                    </svg>
-                </div>
-                <div class="logo-text">
-                    <h1>RESILIENT</h1>
-                    <span class="logo-sub">Enterprise AI Agent Benchmark & Remediation Platform</span>
-                </div>
+    <!-- Command Palette Overlay (Ctrl + K) -->
+    <div id="cmd-palette-modal" class="cmd-overlay hidden">
+        <div class="cmd-box glass-panel">
+            <div class="cmd-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="cmd-input" placeholder="Type a command or search models, PRs, repos... (Esc to close)" autofocus>
+                <span class="cmd-kbd">ESC</span>
             </div>
-            <div class="header-actions">
-                <div class="status-badge live">
-                    <span class="pulse-dot"></span> Pipeline Active • 52/52 Tests Green
+            <div class="cmd-results" id="cmd-results">
+                <!-- Dynamic Command Items -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-layout">
+
+        <!-- Top Navigation Header -->
+        <header class="top-nav glass-nav">
+            <div class="nav-left">
+                <div class="brand-group">
+                    <div class="brand-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                            <polyline points="2 17 12 22 22 17"></polyline>
+                            <polyline points="2 12 12 17 22 12"></polyline>
+                        </svg>
+                    </div>
+                    <div class="brand-title">
+                        <span class="brand-name">RESILIENT</span>
+                        <span class="brand-badge">CLOUD v1.1.0</span>
+                    </div>
                 </div>
-                <a href="https://github.com/harshitthek/resilient" target="_blank" class="btn btn-github">
-                    <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
+
+                <!-- Navigation Tabs -->
+                <nav class="nav-tabs">
+                    <button class="tab-btn active" data-tab="overview">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                        Overview
+                    </button>
+                    <button class="tab-btn" data-tab="leaderboard">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"></path></svg>
+                        Leaderboard
+                    </button>
+                    <button class="tab-btn" data-tab="activity">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                        Live PR Activity
+                    </button>
+                    <button class="tab-btn" data-tab="cockpit">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                        Pipeline Cockpit
+                    </button>
+                </nav>
+            </div>
+
+            <div class="nav-right">
+                <!-- Command Palette Trigger Button -->
+                <button class="cmd-trigger-btn" id="cmd-trigger">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <span>Search / Commands</span>
+                    <span class="kbd-shortcut">Ctrl K</span>
+                </button>
+
+                <div class="status-indicator live">
+                    <span class="dot"></span>
+                    <span class="status-text">Pipeline Active • 52/52 Green</span>
+                </div>
+
+                <a href="https://github.com/harshitthek/resilient" target="_blank" class="btn-github">
+                    <svg height="15" width="15" viewBox="0 0 16 16" fill="currentColor">
                         <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
                     </svg>
-                    GitHub Repo
+                    <span>GitHub</span>
                 </a>
             </div>
         </header>
 
-        <!-- Hero Section & High-Impact Metric Cards -->
-        <section class="hero-section">
-            <div class="hero-content">
-                <div class="hero-badge-row">
-                    <span class="hero-tag">🚀 Multi-Model Quality Tournament</span>
-                    <span class="hero-tag-secondary">Live SWE-Bench Style Autonomous Remediation</span>
-                </div>
-                <h2 class="hero-title">Empirical AI Coding Agent Leaderboard on Real-World Repositories</h2>
-                <p class="hero-description">
-                    Resilient continuously scans trending GitHub repositories, executes competitive multi-candidate AI tournaments (NVIDIA Nemotron 3.5, Gemini 2.5 Flash, Groq Llama 3.3, Cohere), verifies syntax & unit tests in isolated sandboxes, conducts maintainer-grade AI peer reviews, and submits authenticated pull requests upstream.
-                </p>
-            </div>
+        <!-- Main Dashboard Viewport -->
+        <main class="content-viewport">
 
-            <div class="kpi-grid">
-                <div class="kpi-card glass-card">
-                    <div class="kpi-icon teal">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                    </div>
-                    <div class="kpi-data">
-                        <span class="kpi-value" id="kpi-repos">47</span>
-                        <span class="kpi-label">Active Repos Tracked</span>
-                    </div>
-                </div>
-
-                <div class="kpi-card glass-card">
-                    <div class="kpi-icon cyan">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                    </div>
-                    <div class="kpi-data">
-                        <span class="kpi-value" id="kpi-issues">238</span>
-                        <span class="kpi-label">Candidate Issues</span>
-                    </div>
-                </div>
-
-                <div class="kpi-card glass-card">
-                    <div class="kpi-icon emerald">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                        </svg>
-                    </div>
-                    <div class="kpi-data">
-                        <span class="kpi-value" id="kpi-score">0.98</span>
-                        <span class="kpi-label">Top Composite Score</span>
-                    </div>
-                </div>
-
-                <div class="kpi-card glass-card">
-                    <div class="kpi-icon violet">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="18" cy="18" r="3"></circle>
-                            <circle cx="6" cy="6" r="3"></circle>
-                            <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
-                            <line x1="6" y1="9" x2="6" y2="21"></line>
-                        </svg>
-                    </div>
-                    <div class="kpi-data">
-                        <span class="kpi-value" id="kpi-prs">2</span>
-                        <span class="kpi-label">Upstream PRs Live</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Live Submitted Pull Requests Showcase -->
-        <section class="section-container" id="submitted-prs-section">
-            <div class="section-header">
-                <div class="section-title-group">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="18" cy="18" r="3"></circle>
-                        <circle cx="6" cy="6" r="3"></circle>
-                        <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
-                        <line x1="6" y1="9" x2="6" y2="21"></line>
-                    </svg>
-                    <h2>Live Upstream Pull Requests Submitted</h2>
-                </div>
-                <span class="badge badge-purple">Verified & Submitted</span>
-            </div>
-
-            <div class="pr-showcase-grid" id="pr-showcase-grid">
-                <!-- Upstream PR Card 1: Soup #428 -->
-                <div class="pr-card glass-card">
-                    <div class="pr-card-header">
-                        <div class="pr-card-title-group">
-                            <span class="pr-repo-badge">MakazhanAlpamys/Soup</span>
-                            <span class="badge badge-success">PR #428 (Open)</span>
+            <!-- Overview Section (Default Tab) -->
+            <div id="view-overview" class="view-panel active">
+                
+                <!-- KPI Metric Strip -->
+                <div class="kpi-strip">
+                    <div class="metric-card glass-card">
+                        <div class="metric-header">
+                            <span class="metric-title">TRACKED REPOSITORIES</span>
+                            <span class="metric-tag teal">500 - 5K Stars</span>
                         </div>
-                        <span class="pr-score-badge">0.98 Score</span>
-                    </div>
-                    <h4 class="pr-title">fix(gpu): support Apple Silicon MLX device detection and unified memory (#423)</h4>
-                    <p class="pr-desc">Disambiguates Apple Silicon MLX runtime from PyTorch MPS, extracts hardware chip branding, queries unified memory, and prevents silent 4-bit quantization downgrade.</p>
-                    <div class="pr-meta-row">
-                        <span>🏆 Agent: <strong>Quality Tournament (Nemotron)</strong></span>
-                        <span>🧪 Tests: <strong style="color: var(--accent-emerald);">5/5 Passed (100%)</strong></span>
-                    </div>
-                    <div class="pr-card-actions">
-                        <a href="https://github.com/MakazhanAlpamys/Soup/pull/428" target="_blank" class="btn btn-pr">
-                            🚀 View Live PR on GitHub ↗
-                        </a>
-                        <button class="btn btn-diff" onclick="openDiffModal(40)">
-                            🔍 Inspect Code Fix
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Upstream PR Card 2: superpowers #2148 -->
-                <div class="pr-card glass-card">
-                    <div class="pr-card-header">
-                        <div class="pr-card-title-group">
-                            <span class="pr-repo-badge">obra/superpowers</span>
-                            <span class="badge badge-success">PR #2148 (Open)</span>
+                        <div class="metric-body">
+                            <span class="metric-num" id="kpi-repos">47</span>
+                            <span class="metric-sub">Daily Trending Open Source</span>
                         </div>
-                        <span class="pr-score-badge">0.85 Score</span>
                     </div>
-                    <h4 class="pr-title">fix(core): resolve subagent-driven implementer fix-loop mode switch (#2140)</h4>
-                    <p class="pr-desc">Restores automated report delivery on fix-loop resume by ensuring agent state machine preserves delivery callbacks.</p>
-                    <div class="pr-meta-row">
-                        <span>⚡ Agent: <strong>Gemini 2.5 Flash</strong></span>
-                        <span>🧪 Tests: <strong style="color: var(--accent-emerald);">Passed</strong></span>
+
+                    <div class="metric-card glass-card">
+                        <div class="metric-header">
+                            <span class="metric-title">CANDIDATE ISSUES</span>
+                            <span class="metric-tag cyan">Ingested</span>
+                        </div>
+                        <div class="metric-body">
+                            <span class="metric-num" id="kpi-issues">238</span>
+                            <span class="metric-sub">Open Issue Queue</span>
+                        </div>
                     </div>
-                    <div class="pr-card-actions">
-                        <a href="https://github.com/obra/superpowers/pull/2148" target="_blank" class="btn btn-pr">
-                            🚀 View Live PR on GitHub ↗
-                        </a>
-                        <button class="btn btn-diff" onclick="openDiffModal(1)">
-                            🔍 Inspect Code Fix
-                        </button>
+
+                    <div class="metric-card glass-card">
+                        <div class="metric-header">
+                            <span class="metric-title">TOP COMPOSITE SCORE</span>
+                            <span class="metric-tag emerald">Quality Bar</span>
+                        </div>
+                        <div class="metric-body">
+                            <span class="metric-num" id="kpi-score">0.98</span>
+                            <span class="metric-sub">Consensus Tournament</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card glass-card">
+                        <div class="metric-header">
+                            <span class="metric-title">UPSTREAM PRS SUBMITTED</span>
+                            <span class="metric-tag violet">Live PRs</span>
+                        </div>
+                        <div class="metric-body">
+                            <span class="metric-num" id="kpi-prs">2</span>
+                            <span class="metric-sub">Authenticated GitHub Delivery</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Split Grid: Radar Matrix & Top Leaderboard -->
+                <div class="grid-split-2">
+                    
+                    <!-- Radar Matrix Card -->
+                    <div class="panel-card glass-card">
+                        <div class="card-header-bar">
+                            <h3>📊 Multi-Model Capability Radar</h3>
+                            <span class="badge-sm">5 Core Dimensions</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Top Leaderboard Preview Card -->
+                    <div class="panel-card glass-card">
+                        <div class="card-header-bar">
+                            <h3>🏆 Top Performing AI Agents</h3>
+                            <button class="link-btn" onclick="switchTab('leaderboard')">View All →</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Model / Strategy</th>
+                                        <th>Pass Rate</th>
+                                        <th>Quality Score</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="preview-leaderboard-tbody">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Pull Request Showcase Card -->
+                <div class="panel-card glass-card mt-6">
+                    <div class="card-header-bar">
+                        <div class="title-with-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
+                            <h3>Upstream Pull Requests Submitted</h3>
+                        </div>
+                        <span class="badge-sm purple">Authentic GitHub Submissions</span>
+                    </div>
+                    <div class="pr-cards-grid" id="pr-cards-grid">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Full Leaderboard View -->
+            <div id="view-leaderboard" class="view-panel">
+                <div class="panel-card glass-card">
+                    <div class="card-header-bar flex-between">
+                        <div class="title-group">
+                            <h2>🏆 Empirical AI Agent Leaderboard</h2>
+                            <p class="subtitle">Real-world SWE-Bench style execution scores across tracked GitHub repositories.</p>
+                        </div>
+                        
+                        <!-- Search & Filter Controls -->
+                        <div class="filter-controls">
+                            <input type="text" id="leaderboard-search" class="search-input" placeholder="Filter models...">
+                            <div class="chip-group" id="lang-chips">
+                                <button class="chip active" data-lang="all">All</button>
+                                <button class="chip" data-lang="python">Python</button>
+                                <button class="chip" data-lang="javascript">JS/TS</button>
+                                <button class="chip" data-lang="rust">Rust</button>
+                                <button class="chip" data-lang="go">Go</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table dense" id="full-leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Model Name</th>
+                                    <th>Total Runs</th>
+                                    <th>Passed</th>
+                                    <th>Failed</th>
+                                    <th>Pass Rate</th>
+                                    <th>Reviewer Score</th>
+                                    <th>Composite Score</th>
+                                    <th>PRs Opened</th>
+                                    <th>Latency</th>
+                                </tr>
+                            </thead>
+                            <tbody id="full-leaderboard-tbody">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- AI Agent Performance Leaderboard & Radar Benchmark Matrix -->
-        <section class="section-container" id="leaderboard-section">
-            <div class="section-header">
-                <div class="section-title-group">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
-                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
-                        <path d="M4 22h16"></path>
-                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
-                        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
-                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path>
-                    </svg>
-                    <h2>Empirical AI Agent Leaderboard</h2>
-                </div>
-                <!-- Language Filter Tabs -->
-                <div class="filter-tabs">
-                    <button class="filter-tab active" onclick="setLanguageFilter('all')">All Languages</button>
-                    <button class="filter-tab" onclick="setLanguageFilter('python')">Python</button>
-                    <button class="filter-tab" onclick="setLanguageFilter('typescript')">TypeScript</button>
-                    <button class="filter-tab" onclick="setLanguageFilter('rust')">Rust</button>
-                    <button class="filter-tab" onclick="setLanguageFilter('go')">Go</button>
-                </div>
-            </div>
-
-            <div class="leaderboard-layout">
-                <!-- Leaderboard Table -->
-                <div class="table-card glass-card">
-                    <table class="leaderboard-table">
-                        <thead>
-                            <tr>
-                                <th>Rank</th>
-                                <th>Agent Model</th>
-                                <th>Pass Rate (%)</th>
-                                <th>Composite Score</th>
-                                <th>Reviewer Score</th>
-                                <th>Latency / Speed</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="leaderboard-body">
-                            <!-- Populated dynamically via app.js -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Radar Comparison Chart -->
-                <div class="chart-card glass-card">
-                    <div class="chart-header">
-                        <h3>Model Capability Matrix</h3>
-                        <span style="font-size: 11px; color: var(--text-muted);">Empirical Multi-Vector Audit</span>
+            <!-- Live PR Activity View -->
+            <div id="view-activity" class="view-panel">
+                <div class="panel-card glass-card">
+                    <div class="card-header-bar">
+                        <h2>🔀 Live Pull Request Activity & Maintainer Audit Log</h2>
+                        <p class="subtitle">Detailed breakdown of upstream pull requests, patch diffs, and maintainer reviewer notes.</p>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="comparisonRadarChart"></canvas>
+                    <div class="pr-cards-grid" id="full-pr-grid">
+                        <!-- Populated via JS -->
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- Speed & Latency Benchmark Matrix -->
-        <section class="section-container" id="benchmark-section">
-            <div class="section-header">
-                <div class="section-title-group">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                    </svg>
-                    <h2>Empirical Latency & Inference Benchmarks</h2>
+            <!-- Pipeline Cockpit View -->
+            <div id="view-cockpit" class="view-panel">
+                <div class="grid-split-cockpit">
+                    
+                    <!-- Left: Control Action Triggers -->
+                    <div class="panel-card glass-card">
+                        <div class="card-header-bar">
+                            <h3>⚡ Stage Trigger Controls</h3>
+                            <span class="badge-sm cyan">Interactive</span>
+                        </div>
+                        <p class="text-sm text-dim mb-4">Manually trigger specific pipeline stages to run on candidate repos & issues.</p>
+                        
+                        <div class="action-btn-group">
+                            <button class="stage-btn discover" onclick="triggerStage('discover')">
+                                <div class="stage-btn-left">
+                                    <span class="stage-num">01</span>
+                                    <div class="stage-text">
+                                        <span class="stage-title">Trigger Discovery</span>
+                                        <span class="stage-sub">Scrape 500-5K Star Trending Repos</span>
+                                    </div>
+                                </div>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+
+                            <button class="stage-btn dispatch" onclick="triggerStage('dispatch')">
+                                <div class="stage-btn-left">
+                                    <span class="stage-num">02</span>
+                                    <div class="stage-text">
+                                        <span class="stage-title">Trigger Agent Dispatch</span>
+                                        <span class="stage-sub">Fork, Clone Sandbox & Remediate</span>
+                                    </div>
+                                </div>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+
+                            <button class="stage-btn evaluate" onclick="triggerStage('evaluate')">
+                                <div class="stage-btn-left">
+                                    <span class="stage-num">03</span>
+                                    <div class="stage-text">
+                                        <span class="stage-title">Trigger Evaluation</span>
+                                        <span class="stage-sub">Run Tests & Maintainer Peer Review</span>
+                                    </div>
+                                </div>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+
+                            <button class="stage-btn submit" onclick="triggerStage('submit')">
+                                <div class="stage-btn-left">
+                                    <span class="stage-num">04</span>
+                                    <div class="stage-text">
+                                        <span class="stage-title">Trigger PR Submission</span>
+                                        <span class="stage-sub">Open Upstream PR (Score >= 0.75)</span>
+                                    </div>
+                                </div>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Live Terminal Console Logs -->
+                    <div class="panel-card glass-card terminal-card">
+                        <div class="card-header-bar flex-between border-b border-glass">
+                            <div class="terminal-title">
+                                <span class="term-dot red"></span>
+                                <span class="term-dot yellow"></span>
+                                <span class="term-dot green"></span>
+                                <span class="term-label">pipeline_execution.log</span>
+                            </div>
+                            <button class="clear-btn" onclick="clearConsole()">Clear Logs</button>
+                        </div>
+                        <div class="terminal-body" id="terminal-body">
+                            <div class="log-line info">[SYS] Resilient Pipeline Terminal Initialized.</div>
+                            <div class="log-line success">[SYS] Connected to PostgreSQL & GitHub App Authentication Engine.</div>
+                            <div class="log-line info">[SYS] Select a stage trigger above or press Ctrl+K to execute commands.</div>
+                        </div>
+                    </div>
+
                 </div>
-                <span class="live-tag">Live Tested</span>
             </div>
 
-            <div class="latency-grid">
-                <div class="latency-card glass-card">
-                    <div class="latency-header">
-                        <span class="model-badge">Groq</span>
-                        <span class="latency-value" style="color: var(--accent-emerald);">1.28s</span>
-                    </div>
-                    <h4>Llama 3.3 70B Versatile</h4>
-                    <p>Ultra-fast code generation & instant diff formatting.</p>
-                    <div class="latency-meter">
-                        <div class="latency-fill" style="width: 100%; background: var(--accent-emerald);"></div>
-                    </div>
-                </div>
-
-                <div class="latency-card glass-card">
-                    <div class="latency-header">
-                        <span class="model-badge">Cohere</span>
-                        <span class="latency-value" style="color: var(--accent-cyan);">3.37s</span>
-                    </div>
-                    <h4>Command R (08-2024)</h4>
-                    <p>Structured problem distillation & requirement mapping.</p>
-                    <div class="latency-meter">
-                        <div class="latency-fill" style="width: 75%; background: var(--accent-cyan);"></div>
-                    </div>
-                </div>
-
-                <div class="latency-card glass-card highlight">
-                    <div class="latency-header">
-                        <span class="model-badge" style="background: rgba(139, 92, 246, 0.3); color: #c4b5fd;">NVIDIA NIM</span>
-                        <span class="latency-value" style="color: #a78bfa;">4.02s</span>
-                    </div>
-                    <h4>Nemotron 3.5 Lightning (30B)</h4>
-                    <p>Deep chain-of-thought code reasoning & edge-case safety.</p>
-                    <div class="latency-meter">
-                        <div class="latency-fill" style="width: 65%; background: #a78bfa;"></div>
-                    </div>
-                </div>
-
-                <div class="latency-card glass-card">
-                    <div class="latency-header">
-                        <span class="model-badge">Google</span>
-                        <span class="latency-value" style="color: #f59e0b;">9.85s</span>
-                    </div>
-                    <h4>Gemini 2.5 Flash</h4>
-                    <p>1M+ token multi-file repository context ingestion.</p>
-                    <div class="latency-meter">
-                        <div class="latency-fill" style="width: 35%; background: #f59e0b;"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Interactive Live Pipeline Control Panel -->
-        <section class="section-container" id="control-panel-section">
-            <div class="section-header">
-                <div class="section-title-group">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                    </svg>
-                    <h2>Live Pipeline Interactive Control Panel</h2>
-                </div>
-                <p>Trigger autonomous pipeline stages directly from the web interface.</p>
-            </div>
-
-            <div class="control-panel-card glass-card">
-                <div class="control-buttons-grid">
-                    <button class="btn-control" onclick="triggerPipeline('discovery')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        Stage 1: Discovery
-                    </button>
-                    <button class="btn-control" onclick="triggerPipeline('dispatch')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                        Stage 2: Quality Tournament
-                    </button>
-                    <button class="btn-control" onclick="triggerPipeline('evaluate')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                        Stage 3: Sandbox Evaluate
-                    </button>
-                    <button class="btn-control" onclick="triggerPipeline('submit')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
-                        Stage 4: Upstream Submit
-                    </button>
-                </div>
-                <div class="console-box" id="console-output">
-                    <span class="console-prefix">&gt; System ready. Click any pipeline stage button to execute live scripts or view active state.</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Searchable Repositories & Real-Time Stream -->
-        <div class="dual-column-layout">
-            
-            <!-- Repository Explorer -->
-            <section class="column-section">
-                <div class="section-header">
-                    <div class="section-title-group">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                        <h2>Tracked Repositories</h2>
-                    </div>
-                    <input type="text" id="repo-search" class="search-input" placeholder="Search repos...">
-                </div>
-
-                <div class="repo-list" id="repo-list">
-                    <!-- Populated dynamically via app.js -->
-                </div>
-            </section>
-
-            <!-- Real-Time Activity Feed -->
-            <section class="column-section">
-                <div class="section-header">
-                    <div class="section-title-group">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 11a9 9 0 0 1 9 9"></path>
-                            <path d="M4 4a16 16 0 0 1 16 16"></path>
-                            <circle cx="5" cy="19" r="1"></circle>
-                        </svg>
-                        <h2>Pipeline Activity Stream</h2>
-                    </div>
-                    <span class="live-tag">Live Stream</span>
-                </div>
-
-                <div class="activity-feed" id="activity-feed">
-                    <!-- Populated dynamically via app.js -->
-                </div>
-            </section>
-        </div>
-
-        <!-- Web Dashboard Footer -->
-        <footer class="app-footer">
-            <p>Created & Maintained by <strong>Harshit</strong> (<a href="https://github.com/harshitthek" target="_blank">@harshitthek</a>) • <a href="https://github.com/harshitthek/resilient" target="_blank">Resilient Open Source Engine</a></p>
-        </footer>
-
+        </main>
     </div>
 
-    <!-- Enhanced Modal for Diff & Error Inspector with 1-Click Copy -->
-    <div id="diff-modal" class="modal-overlay hidden">
-        <div class="modal-content glass-card">
+    <!-- Patch Inspector Modal -->
+    <div id="patch-inspector-modal" class="modal-overlay hidden">
+        <div class="modal-box glass-panel max-w-4xl">
             <div class="modal-header">
-                <h3 id="modal-title">Code Fix Patch & Audit Inspector</h3>
-                <div class="modal-actions">
-                    <button class="btn btn-github" id="copy-btn" onclick="copyInspectorContent()">📋 Copy Patch</button>
-                    <button class="modal-close" onclick="closeDiffModal()">✕</button>
+                <div class="modal-title-group">
+                    <h3 id="modal-title">Git Diff Patch Inspector</h3>
+                    <span id="modal-subtitle" class="badge-sm">Diff Patch</span>
+                </div>
+                <button class="modal-close" onclick="closeInspectorModal()">✕</button>
+            </div>
+            
+            <div class="modal-tabs border-b border-glass">
+                <button class="modal-tab active" id="btn-tab-diff" onclick="switchInspectorTab('diff')">Git Diff Patch</button>
+                <button class="modal-tab" id="btn-tab-notes" onclick="switchInspectorTab('notes')">Maintainer Audit Notes</button>
+            </div>
+
+            <div class="modal-body">
+                <div id="inspector-content-diff" class="inspector-pane">
+                    <pre><code id="inspector-diff-code" class="language-diff">Loading patch diff...</code></pre>
+                </div>
+                <div id="inspector-content-notes" class="inspector-pane hidden">
+                    <ul id="inspector-notes-list" class="notes-list">
+                        <!-- Populated via JS -->
+                    </ul>
                 </div>
             </div>
-            <div class="inspector-tabs">
-                <button class="inspector-tab active" id="tab-diff" onclick="switchInspectorTab('diff')">Git Patch Diff</button>
-                <button class="inspector-tab" id="tab-error" onclick="switchInspectorTab('error')">Reviewer Audit & Notes</button>
-            </div>
-            <div class="modal-body" id="modal-diff-container">
-                <!-- Rendered dynamically -->
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="copyPatchToClipboard()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Copy Git Patch
+                </button>
+                <button class="btn btn-primary" onclick="closeInspectorModal()">Close</button>
             </div>
         </div>
     </div>

@@ -93,7 +93,22 @@ CREATE TABLE pr_submissions (
     maintainer_status  TEXT NOT NULL DEFAULT 'pending' -- pending | merged | closed | rejected
 );
 
+-- Autonomous Agent Memory Bank (Global & Repo-Specific Memory)
+CREATE TABLE agent_memories (
+    id            SERIAL PRIMARY KEY,
+    scope         TEXT NOT NULL,               -- 'global' or 'repository'
+    repo_id       INTEGER REFERENCES repos(id) ON DELETE CASCADE, -- NULL for global scope
+    memory_type   TEXT NOT NULL,               -- 'pattern' | 'pitfall' | 'convention' | 'test_runner'
+    content       TEXT NOT NULL,               -- Concise engineering insight / rule
+    source_run_id INTEGER REFERENCES runs(id) ON DELETE SET NULL,
+    confidence    NUMERIC(3,2) NOT NULL DEFAULT 1.00,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX idx_issues_status ON issues(status);
 CREATE INDEX idx_runs_issue ON runs(issue_id);
 CREATE INDEX idx_runs_status ON runs(status);       -- Mode 1: poll pending/running runs
 CREATE INDEX idx_evaluations_run ON evaluations(run_id);
+CREATE INDEX idx_memories_scope ON agent_memories(scope);
+CREATE INDEX idx_memories_repo ON agent_memories(repo_id);

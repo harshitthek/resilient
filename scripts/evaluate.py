@@ -327,6 +327,19 @@ def evaluate_run(conn, session, run_row):
                     evaluated_at = now()
             """, (run_id, tests_passed, test_summary, reviewer_score, json.dumps(reviewer_notes), composite))
         conn.commit()
+
+        # Post-mortem memory synthesis & coordination learning feed
+        try:
+            from memory_utils import synthesize_post_mortem_learning
+            learnings = synthesize_post_mortem_learning(
+                conn, run_id=run_id, issue_title=issue_title, diff_text="",
+                tests_passed=tests_passed, reviewer_notes=reviewer_notes
+            )
+            if learnings:
+                print(f"  [Memory Bank] Synthesized {len(learnings)} new learning(s) for future agent runs.", file=sys.stderr)
+        except Exception as mem_exc:
+            print(f"  [Memory Bank Warning] {mem_exc}", file=sys.stderr)
+
         print(f"  Run #{run_id} evaluated: tests_passed={tests_passed}, reviewer={reviewer_score}, composite={composite}", file=sys.stderr)
 
     finally:

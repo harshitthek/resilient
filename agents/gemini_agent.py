@@ -226,9 +226,13 @@ def _get_diff_stat(work_dir: str) -> str:
 
 # --- Agent loop ---
 
-def _build_system_prompt(ctx: RepoContext) -> str:
-    """Build the system prompt for the Gemini agent."""
+def _build_system_prompt(ctx: RepoContext, conn=None) -> str:
+    """Build the system prompt for the Gemini agent including Autonomous Memory Bank."""
+    from memory_utils import fetch_agent_memories, format_memory_prompt
     lang_hint = f"The repository is primarily written in {ctx.language}." if ctx.language else ""
+    memories = fetch_agent_memories(conn, repo_id=getattr(ctx, "repo_id", None))
+    memory_prompt_block = format_memory_prompt(memories)
+
     return f"""You are a Principal Open-Source Software Architect & Core Maintainer contributing a production-grade fix to a top-tier open-source repository.
 
 Repository: {ctx.upstream_full_name}
@@ -237,6 +241,8 @@ Issue #{ctx.issue_number}: {ctx.issue_title}
 
 === ISSUE DESCRIPTION ===
 {ctx.issue_body}
+
+{memory_prompt_block}
 
 === SENIOR MAINTAINER CONTRIBUTION STANDARDS ===
 0. MANDATORY FIRST STEP - REPOSITORY DOCUMENTATION INSPECTION:

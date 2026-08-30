@@ -98,7 +98,7 @@ class TestCodeQualityAssessment(unittest.TestCase):
             mock_run.return_value = MagicMock(stdout="", returncode=0)
             score, notes = evaluate.assess_code_quality(self.test_dir)
             self.assertEqual(score, 0.0)
-            self.assertIn("Empty changeset", notes["findings"])
+            self.assertTrue(any("Empty changeset" in f for f in notes["findings"]))
 
     def test_valid_diff_returns_score(self):
         with patch("subprocess.run") as mock_run:
@@ -119,8 +119,8 @@ class TestCodeQualityAssessment(unittest.TestCase):
                 MagicMock(stdout="main.py\n", returncode=0),
             ]
             score, notes = evaluate.assess_code_quality(self.test_dir)
-            self.assertEqual(score, 0.70)
-            self.assertIn("Large diff size (>500 lines)", notes["findings"])
+            self.assertEqual(score, 0.65)
+            self.assertTrue(any("Diff size exceeds 500 lines" in f for f in notes["findings"]))
 
     def test_timeout_execution_handled(self):
         import subprocess

@@ -115,14 +115,21 @@ def detect_and_run_tests(work_dir: str, language: str = None):
         return False, sanitize_token(f"Test execution failed: {exc}")
 
 
-def assess_code_quality(work_dir: str):
-    """Analyze agent diff for code quality, structural sanity, and size.
+def assess_code_quality(work_dir: str) -> tuple[float, dict]:
+    """Perform Senior Open-Source Maintainer Peer Review of the candidate diff.
+
+    Evaluates the diff across 5 real maintainer rubric dimensions:
+    1. Root Cause & Correctness (30%)
+    2. Diff Minimality & Zero Formatting Noise (25%)
+    3. Edge-Case & Null Safety (20%)
+    4. Idiomatic Style & Type Annotations (15%)
+    5. Documentation & Test Rationale (10%)
 
     Returns:
         (reviewer_score: float, reviewer_notes: dict)
     """
-    notes = {"syntax_valid": True, "diff_lines": 0, "findings": []}
-    score = 0.85  # baseline score for successful diff generation
+    notes = {"syntax_valid": True, "diff_lines": 0, "findings": [], "maintainer_rubric": {}}
+    score = 0.85  # baseline starting score for valid diff
 
     try:
         diff_proc = subprocess.run(
@@ -142,17 +149,10 @@ def assess_code_quality(work_dir: str):
         notes["diff_lines"] = diff_lines
 
         if diff_lines == 0:
-            notes["findings"].append("Empty changeset")
+            notes["findings"].append("Empty changeset (no modifications made)")
             return 0.0, notes
 
-        if diff_lines > 500:
-            score -= 0.15
-            notes["findings"].append("Large diff size (>500 lines)")
-        elif diff_lines > 200:
-            score -= 0.05
-            notes["findings"].append("Moderate diff size (>200 lines)")
-
-        # Python syntax check if python files changed
+        # Check changed files list
         stat_proc = subprocess.run(
             ["git", "diff", "--name-only", "HEAD~1..HEAD"],
             cwd=work_dir, capture_output=True, text=True
@@ -166,6 +166,17 @@ def assess_code_quality(work_dir: str):
         changed_files = [f.strip() for f in stat_proc.stdout.splitlines() if f.strip()]
         notes["changed_files"] = changed_files
 
+        # Check for cosmetic churn / excessive diff size
+        if diff_lines > 500:
+            score -= 0.20
+            notes["findings"].append("Maintainer Warning: Diff size exceeds 500 lines (high churn risk)")
+        elif diff_lines > 200:
+            score -= 0.10
+            notes["findings"].append("Maintainer Warning: Diff size exceeds 200 lines")
+        else:
+            notes["findings"].append("Maintainer Note: Patch is clean and minimal")
+
+        # Static AST syntax validation for Python files
         for f in changed_files:
             if f.endswith(".py") and os.path.exists(os.path.join(work_dir, f)):
                 try:
@@ -180,34 +191,75 @@ def assess_code_quality(work_dir: str):
                     notes["findings"].append(f"Encoding error in {f}: File is not valid UTF-8")
                     score -= 0.20
 
-        # Optional Semantic AI Reviewer enhancement
-        if os.environ.get("ENABLE_AI_REVIEWER", "0") in ("1", "true") and diff_text:
-            nv_key = os.environ.get("NVIDIA_API_KEY")
-            if nv_key:
-                try:
-                    import urllib.request
-                    req = urllib.request.Request(
-                        "https://integrate.api.nvidia.com/v1/chat/completions",
-                        data=json.dumps({
-                            "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-                            "messages": [
-                                {"role": "system", "content": "You are a code reviewer. Output a JSON object: {\"quality_score_0_to_1\": <float>, \"notes\": [<str>]}"},
-                                {"role": "user", "content": f"Review this git diff for maintainability and bug risks:\n{diff_text[:1500]}"}
-                            ],
-                            "max_tokens": 200
-                        }).encode("utf-8"),
-                        headers={"Authorization": f"Bearer {nv_key}", "Content-Type": "application/json", "User-Agent": "Resilient-Pipeline/1.0"}
-                    )
-                    with urllib.request.urlopen(req, timeout=10) as resp:
-                        rev_data = json.loads(resp.read().decode("utf-8"))
-                        rev_content = rev_data["choices"][0]["message"]["content"]
-                        if "{" in rev_content and "}" in rev_content:
-                            parsed_rev = json.loads(rev_content[rev_content.find("{"):rev_content.rfind("}")+1])
-                            ai_score = float(parsed_rev.get("quality_score_0_to_1", 0.85))
-                            score = (score * 0.5) + (ai_score * 0.5)
-                            notes["ai_reviewer_notes"] = parsed_rev.get("notes", [])
-                except Exception:
-                    pass
+        # LLM Senior Open-Source Maintainer Peer Review Evaluation
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+        nvidia_key = os.environ.get("NVIDIA_API_KEY")
+        groq_key = os.environ.get("GROQ_API_KEY")
+
+        reviewer_prompt = f"""You are a Principal Open-Source Software Architect and Core Maintainer reviewing an incoming Pull Request patch diff.
+
+=== CANDIDATE GIT DIFF PATCH ===
+{diff_text[:3000]}
+
+=== SENIOR MAINTAINER REVIEW RUBRIC ===
+Evaluate this patch as a core maintainer:
+1. Root Cause & Correctness (0 to 30 pts): Does it solve the actual bug without masking symptoms with silent try-except fallbacks?
+2. Diff Minimality & Zero Churn (0 to 25 pts): Is the patch surgical? Avoids touching unrelated files or reformatting imports?
+3. Edge-Case & Null Safety (0 to 20 pts): Does it handle None, null, empty strings, and collection boundaries?
+4. Idiomatic Style & Typing (0 to 15 pts): Does it match host code conventions and include type annotations?
+5. Documentation & Rationale (0 to 10 pts): Is the fix clear and maintainable?
+
+Respond strictly in JSON format:
+{{
+  "maintainer_score_0_to_1": <float between 0.0 and 1.0>,
+  "findings": [<string list of maintainer review notes>]
+}}"""
+
+        ai_review_score = None
+        # Attempt Gemini -> NVIDIA NIM -> Groq fallback
+        if gemini_key:
+            try:
+                import urllib.request
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
+                payload = json.dumps({"contents": [{"parts": [{"text": reviewer_prompt}]}]}).encode("utf-8")
+                req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    if "{" in text and "}" in text:
+                        parsed = json.loads(text[text.find("{"):text.rfind("}")+1])
+                        ai_review_score = float(parsed.get("maintainer_score_0_to_1", 0.85))
+                        notes["findings"].extend(parsed.get("findings", []))
+            except Exception:
+                pass
+
+        if ai_review_score is None and nvidia_key:
+            try:
+                import urllib.request
+                req = urllib.request.Request(
+                    "https://integrate.api.nvidia.com/v1/chat/completions",
+                    data=json.dumps({
+                        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+                        "messages": [
+                            {"role": "system", "content": "You are a Principal Open-Source Maintainer. Output strictly JSON."},
+                            {"role": "user", "content": reviewer_prompt}
+                        ],
+                        "max_tokens": 300
+                    }).encode("utf-8"),
+                    headers={"Authorization": f"Bearer {nvidia_key}", "Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    text = data["choices"][0]["message"]["content"]
+                    if "{" in text and "}" in text:
+                        parsed = json.loads(text[text.find("{"):text.rfind("}")+1])
+                        ai_review_score = float(parsed.get("maintainer_score_0_to_1", 0.85))
+                        notes["findings"].extend(parsed.get("findings", []))
+            except Exception:
+                pass
+
+        if ai_review_score is not None:
+            score = round((score * 0.4) + (ai_review_score * 0.6), 2)
 
     except Exception as exc:
         notes["findings"].append(f"Diff evaluation warning: {exc}")

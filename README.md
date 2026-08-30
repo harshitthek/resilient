@@ -6,7 +6,7 @@
 
 [![GitHub Pages](https://img.shields.io/badge/LIVE%20DEMO-GITHUB%20PAGES-8b5cf6?style=for-the-badge&logo=githubpages)](https://harshitthek.github.io/resilient/)
 [![Pipeline CI](https://img.shields.io/github/actions/workflow/status/harshitthek/resilient/pages.yml?branch=main&style=for-the-badge&logo=github&label=PAGES%20DEPLOY)](https://harshitthek.github.io/resilient/)
-[![Pytest Suite](https://img.shields.io/badge/TESTS-52%20PASSED%20(100%25)-10b981?style=for-the-badge&logo=pytest)](https://github.com/harshitthek/resilient)
+[![Pytest Suite](https://img.shields.io/badge/TESTS-47%20PASSED%20(100%25)-10b981?style=for-the-badge&logo=pytest)](https://github.com/harshitthek/resilient)
 [![Python Version](https://img.shields.io/badge/PYTHON-3.11%2B-06b6d4?style=for-the-badge&logo=python)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FASTAPI-v1.1.0-059669?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
 [![Three.js](https://img.shields.io/badge/THREE.JS-3D%20DASHBOARD-818cf8?style=for-the-badge&logo=threedotjs)](https://harshitthek.github.io/resilient/)
@@ -148,11 +148,11 @@ Live empirical benchmarks executed across Resilient's active zero-credit-card mo
 
 | Stage | Implementation Component | Operational Status | Verification Method |
 |---|---|---|---|
-| **Stage 1: Discovery** | [`scripts/discover.py`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/scripts/discover.py), [`webhook_receiver.py`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/webhook_receiver.py) | ✅ **100% Live & Verified** | GitHub Actions (`discover.yml`, 47+ repos tracked) |
-| **Stage 2: Dispatch** | [`scripts/dispatch.py`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/scripts/dispatch.py), [`agents/`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/agents) | ✅ **100% Live & Verified** | Quality-First Multi-Model Tournament Sandboxes |
-| **Stage 3: Evaluation** | [`scripts/evaluate.py`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/scripts/evaluate.py) | ✅ **100% Live & Verified** | Test runners (`pytest`, `npm`, `cargo`, `go`) + AI Review |
+| **Stage 1: Discovery** | [`scripts/discover.py`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/scripts/discover.py), [`webhook_receiver.py`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/webhook_receiver.py) | ✅ **100% Live & Verified** | Daily Trending Scraper (`since=daily`, 500-5,000 star creator window) |
+| **Stage 2: Dispatch** | [`scripts/dispatch.py`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/scripts/dispatch.py), [`agents/`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/agents) | ✅ **100% Live & Verified** | Sandbox Isolation + DB Connection Liveness Guard (`ensure_connection`) |
+| **Stage 3: Evaluation** | [`scripts/evaluate.py`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/scripts/evaluate.py) | ✅ **100% Live & Verified** | Test runners (`pytest`, `npm`) + AI Review (Normalized Non-Test Scoring) |
 | **Stage 4: Submission** | [`scripts/submit.py`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/scripts/submit.py), [`scripts/github_utils.py`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/scripts/github_utils.py) | ✅ **100% Live & Verified** | `resilient-fix[bot]` GitHub App (JWT RS256 Auth) |
-| **Stage 5: Leaderboard** | [`api/main.py`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/api/main.py), [`web/`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/web) | ✅ **100% Live & Verified** | FastAPI REST API + Three.js UI (**52/52 Tests Passed**) |
+| **Stage 5: Leaderboard** | [`api/main.py`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/api/main.py), [`web/`](file:///c:/Users/user/Desktop/dwsktop/harshit/projects/Resilient/web) | ✅ **100% Live & Verified** | FastAPI REST API + Three.js UI (**47/47 Tests Passed**) |
 
 ---
 

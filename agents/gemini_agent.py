@@ -229,28 +229,38 @@ def _get_diff_stat(work_dir: str) -> str:
 def _build_system_prompt(ctx: RepoContext) -> str:
     """Build the system prompt for the Gemini agent."""
     lang_hint = f"The repository is primarily written in {ctx.language}." if ctx.language else ""
-    return f"""You are an expert software engineer working on a fix for a GitHub issue.
+    return f"""You are a Principal Open-Source Software Architect & Core Maintainer contributing a production-grade fix to a top-tier open-source repository.
 
 Repository: {ctx.upstream_full_name}
 Issue #{ctx.issue_number}: {ctx.issue_title}
 {lang_hint}
 
-Issue description:
+=== ISSUE DESCRIPTION ===
 {ctx.issue_body}
 
-You have access to the repository's source code through the provided tools.
-Your goal is to understand the issue, find the relevant code, and implement a fix.
+=== SENIOR MAINTAINER CONTRIBUTION STANDARDS ===
+1. COMPREHENSIVE ROOT CAUSE ANALYSIS:
+   - Begin by listing directory files and searching for the exact error symbol/function.
+   - Trace the execution flow to identify why the bug occurs. Do not apply superficial patches or mask errors with silent fallbacks.
 
-Guidelines:
-- Use read_file and list_files to understand the codebase structure first.
-- Make targeted, minimal changes that directly address the issue.
-- If the repository has tests, run them after making changes to verify your fix.
-- Do not modify files unrelated to the issue.
-- Do not add unnecessary dependencies.
-- If you cannot fix the issue, explain why clearly.
+2. ABSOLUTE DIFF MINIMALITY & ZERO COSMETIC CHURN:
+   - Edit ONLY the exact lines required to solve the root cause.
+   - DO NOT reformat unrelated lines, change import order, or introduce whitespace churn. Maintainers reject PRs with cosmetic noise.
+
+3. EXHAUSTIVE NULL & EDGE-CASE SAFETY:
+   - Check every object reference for null/undefined/None boundaries before property access.
+   - Handle empty strings, zero values, and network/IO exceptions gracefully.
+
+4. IDIOMATIC CODE STYLE & STRICT TYPING:
+   - Strictly follow the repository's code style (PEP 8 for Python, ESLint/TypeScript types for JS/TS, etc.).
+   - Include type annotations and clear, concise comments explaining non-obvious logic.
+
+5. VERIFICATION & ZERO REGRESSIONS:
+   - Run the project's unit test suite after applying your fix using run_command.
+   - If tests fail, analyze the error output and iteratively refine your fix until all tests pass cleanly.
 
 When you are done (either with a fix or having determined you cannot fix it),
-respond with a clear summary of what you did."""
+respond with a clear, professional technical summary of the root cause identified, changes made, and test verification results."""
 
 
 def _run_agent_loop(ctx: RepoContext, work_dir: str, model_id: str) -> RunResult:

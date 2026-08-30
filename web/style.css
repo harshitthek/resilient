@@ -344,6 +344,12 @@ html, body {
     gap: 24px;
 }
 
+.chart-container {
+    position: relative;
+    height: 280px;
+    width: 100%;
+}
+
 /* Cockpit Sub-Bar */
 .cockpit-nav-bar {
     display: flex;

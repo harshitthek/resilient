@@ -72,7 +72,18 @@ document.addEventListener("DOMContentLoaded", () => {
     init3DParticleCanvas();
     initTabNavigation();
     initCommandPalette();
+
+    // Render static defaults synchronously for instant display
+    leaderboardData = STATIC_LEADERBOARD;
+    memoriesData = STATIC_MEMORIES;
+
+    renderPreviewLeaderboard();
+    renderFullLeaderboard();
+    renderPRs();
+    renderMemoryBank();
     initRadarChart();
+
+    // Fetch live API data in background if server is running
     loadDashboardData();
     loadMemoryBank();
 });
@@ -335,35 +346,44 @@ function renderPreviewLeaderboard() {
     const tbody = document.getElementById("preview-leaderboard-tbody");
     if (!tbody) return;
 
-    tbody.innerHTML = leaderboardData.slice(0, 3).map((item, idx) => `
-        <tr>
-            <td>#${idx + 1}</td>
-            <td class="model-name">${item.agent_name}</td>
-            <td>${item.pass_rate.toFixed(1)}%</td>
-            <td>${item.avg_reviewer_score.toFixed(2)}</td>
-            <td><span class="badge-sm purple">Active</span></td>
-        </tr>
-    `).join("");
+    tbody.innerHTML = leaderboardData.slice(0, 3).map((item, idx) => {
+        const passRate = (typeof item.pass_rate === 'number') ? item.pass_rate.toFixed(1) : (item.pass_rate || '0.0');
+        const revScore = (typeof item.avg_reviewer_score === 'number') ? item.avg_reviewer_score.toFixed(2) : (item.avg_reviewer_score || '0.00');
+        return `
+            <tr>
+                <td>#${idx + 1}</td>
+                <td class="model-name">${item.agent_name}</td>
+                <td>${passRate}%</td>
+                <td>${revScore}</td>
+                <td><span class="badge-sm purple">Active</span></td>
+            </tr>
+        `;
+    }).join("");
 }
 
 function renderFullLeaderboard() {
     const tbody = document.getElementById("full-leaderboard-tbody");
     if (!tbody) return;
 
-    tbody.innerHTML = leaderboardData.map((item, idx) => `
-        <tr>
-            <td>#${idx + 1}</td>
-            <td class="model-name">${item.agent_name}</td>
-            <td>${item.total_runs}</td>
-            <td style="color:#34d399">${item.successful_runs}</td>
-            <td style="color:#f87171">${item.failed_runs}</td>
-            <td>${item.pass_rate.toFixed(1)}%</td>
-            <td>${item.avg_reviewer_score.toFixed(2)}</td>
-            <td style="font-weight:700; color:#c4b5fd">${item.avg_composite_score.toFixed(2)}</td>
-            <td>${item.prs_submitted}</td>
-            <td>${item.latency || '4.02s'}</td>
-        </tr>
-    `).join("");
+    tbody.innerHTML = leaderboardData.map((item, idx) => {
+        const passRate = (typeof item.pass_rate === 'number') ? item.pass_rate.toFixed(1) : (item.pass_rate || '0.0');
+        const revScore = (typeof item.avg_reviewer_score === 'number') ? item.avg_reviewer_score.toFixed(2) : (item.avg_reviewer_score || '0.00');
+        const compScore = (typeof item.avg_composite_score === 'number') ? item.avg_composite_score.toFixed(2) : (item.avg_composite_score || '0.00');
+        return `
+            <tr>
+                <td>#${idx + 1}</td>
+                <td class="model-name">${item.agent_name}</td>
+                <td>${item.total_runs || 0}</td>
+                <td style="color:#34d399">${item.successful_runs || 0}</td>
+                <td style="color:#f87171">${item.failed_runs || 0}</td>
+                <td>${passRate}%</td>
+                <td>${revScore}</td>
+                <td style="font-weight:700; color:#c4b5fd">${compScore}</td>
+                <td>${item.prs_submitted || 0}</td>
+                <td>${item.latency || '4.02s'}</td>
+            </tr>
+        `;
+    }).join("");
 }
 
 function renderPRs() {

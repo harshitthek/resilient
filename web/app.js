@@ -1,6 +1,6 @@
 /**
- * Resilient Enterprise Cockpit — App Logic
- * Tab switching, Command Palette (Ctrl+K), Live Terminal Logger, Leaderboard Sorting, & Patch Inspector Modal
+ * Resilient Enterprise Control Center — App Logic
+ * Tab switching, Command Palette (Ctrl+K), Custom Dispatcher, Memory Manager, Live Terminal Logger, & Patch Inspector
  */
 
 const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
@@ -8,60 +8,17 @@ const API_BASE = window.location.hostname === "localhost" || window.location.hos
     : "/api/v1";
 
 let activeTab = "overview";
+let activeCockpitSubTab = "triggers";
 let leaderboardData = [];
+let memoriesData = { global: [], repo: [] };
 let activeInspectorPatch = "";
-let activeInspectorNotes = [];
 
 // Empirical Seed Data for Static / Offline Hosting
 const STATIC_LEADERBOARD = [
-    {
-        rank: 1,
-        agent_name: "quality-ensemble-tournament",
-        total_runs: 1,
-        successful_runs: 1,
-        failed_runs: 0,
-        pass_rate: 100.0,
-        avg_reviewer_score: 0.95,
-        avg_composite_score: 0.98,
-        prs_submitted: 1,
-        latency: "4.02s (Nemotron)"
-    },
-    {
-        rank: 2,
-        agent_name: "nvidia/nemotron-3.5-lightning",
-        total_runs: 4,
-        successful_runs: 4,
-        failed_runs: 0,
-        pass_rate: 100.0,
-        avg_reviewer_score: 0.92,
-        avg_composite_score: 0.94,
-        prs_submitted: 1,
-        latency: "4.02s"
-    },
-    {
-        rank: 3,
-        agent_name: "gemini-2.5-flash",
-        total_runs: 34,
-        successful_runs: 1,
-        failed_runs: 33,
-        pass_rate: 2.9,
-        avg_reviewer_score: 0.85,
-        avg_composite_score: 0.85,
-        prs_submitted: 1,
-        latency: "9.85s"
-    },
-    {
-        rank: 4,
-        agent_name: "groq/llama-3.3-70b",
-        total_runs: 8,
-        successful_runs: 4,
-        failed_runs: 4,
-        pass_rate: 50.0,
-        avg_reviewer_score: 0.82,
-        avg_composite_score: 0.82,
-        prs_submitted: 0,
-        latency: "1.28s"
-    }
+    { rank: 1, agent_name: "quality-ensemble-tournament", total_runs: 1, successful_runs: 1, failed_runs: 0, pass_rate: 100.0, avg_reviewer_score: 0.95, avg_composite_score: 0.98, prs_submitted: 1, latency: "4.02s (Nemotron)" },
+    { rank: 2, agent_name: "nvidia/nemotron-3.5-lightning", total_runs: 4, successful_runs: 4, failed_runs: 0, pass_rate: 100.0, avg_reviewer_score: 0.92, avg_composite_score: 0.94, prs_submitted: 1, latency: "4.02s" },
+    { rank: 3, agent_name: "gemini-2.5-flash", total_runs: 34, successful_runs: 1, failed_runs: 33, pass_rate: 2.9, avg_reviewer_score: 0.85, avg_composite_score: 0.85, prs_submitted: 1, latency: "9.85s" },
+    { rank: 4, agent_name: "groq/llama-3.3-70b", total_runs: 8, successful_runs: 4, failed_runs: 4, pass_rate: 50.0, avg_reviewer_score: 0.82, avg_composite_score: 0.82, prs_submitted: 0, latency: "1.28s" }
 ];
 
 const STATIC_PRS = [
@@ -99,6 +56,17 @@ const STATIC_PRS = [
     }
 ];
 
+const STATIC_MEMORIES = {
+    global: [
+        { content: "Always check for None/null/undefined boundaries before dereferencing nested properties.", confidence: 1.0, agent_name: "system" },
+        { content: "Edit ONLY target lines to preserve diff minimality and avoid cosmetic whitespace churn.", confidence: 1.0, agent_name: "system" },
+        { content: "Prioritize inspecting repository documentation (AGENTS.md, CONTRIBUTING.md, README.md) before making edits.", confidence: 1.0, agent_name: "system" },
+        { content: "Ensure syntax validity using static AST compilation check compile(..., 'exec') before committing.", confidence: 1.0, agent_name: "system" },
+        { content: "Preserve host repository code style, docstrings, and type annotations.", confidence: 0.95, agent_name: "system" }
+    ],
+    repo: []
+};
+
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
     init3DParticleCanvas();
@@ -106,6 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initCommandPalette();
     initRadarChart();
     loadDashboardData();
+    loadMemoryBank();
 });
 
 // --- 1. Three.js Particle Background ---
@@ -169,7 +138,7 @@ function init3DParticleCanvas() {
     });
 }
 
-// --- 2. Tab Navigation ---
+// --- 2. Main Navigation Tabs ---
 function initTabNavigation() {
     const tabs = document.querySelectorAll(".tab-btn");
     tabs.forEach(tab => {
@@ -190,12 +159,27 @@ function switchTab(tabId) {
     });
 }
 
-// --- 3. Command Palette (Ctrl + K) ---
+// --- 3. Control Cockpit Sub-Tabs ---
+function switchCockpitSubTab(subTabName) {
+    activeCockpitSubTab = subTabName;
+    document.querySelectorAll(".cockpit-subtab").forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("onclick").includes(subTabName));
+    });
+
+    document.getElementById("cockpit-pane-triggers").classList.toggle("hidden", subTabName !== "triggers");
+    document.getElementById("cockpit-pane-custom-dispatch").classList.toggle("hidden", subTabName !== "custom-dispatch");
+    document.getElementById("cockpit-pane-memory-manager").classList.toggle("hidden", subTabName !== "memory-manager");
+
+    if (subTabName === "memory-manager") {
+        loadMemoryBank();
+    }
+}
+
+// --- 4. Command Palette (Ctrl + K) ---
 function initCommandPalette() {
     const modal = document.getElementById("cmd-palette-modal");
     const trigger = document.getElementById("cmd-trigger");
     const input = document.getElementById("cmd-input");
-    const results = document.getElementById("cmd-results");
 
     function openCmd() {
         modal.classList.remove("hidden");
@@ -234,7 +218,9 @@ function renderCmdResults(query) {
         { title: "Switch Tab: Overview", action: () => { switchTab("overview"); closeCmd(); } },
         { title: "Switch Tab: Leaderboard", action: () => { switchTab("leaderboard"); closeCmd(); } },
         { title: "Switch Tab: Live PR Activity", action: () => { switchTab("activity"); closeCmd(); } },
-        { title: "Switch Tab: Pipeline Cockpit", action: () => { switchTab("cockpit"); closeCmd(); } },
+        { title: "Switch Tab: Control Cockpit", action: () => { switchTab("cockpit"); closeCmd(); } },
+        { title: "Cockpit: Open Custom Issue Dispatcher", action: () => { switchTab("cockpit"); switchCockpitSubTab("custom-dispatch"); closeCmd(); } },
+        { title: "Cockpit: Open Autonomous Memory Bank", action: () => { switchTab("cockpit"); switchCockpitSubTab("memory-manager"); closeCmd(); } },
         { title: "Trigger Stage 1: Discovery (500-5K Stars)", action: () => { triggerStage("discover"); closeCmd(); } },
         { title: "Trigger Stage 2: Agent Dispatch", action: () => { triggerStage("dispatch"); closeCmd(); } },
         { title: "Trigger Stage 3: Evaluation (Maintainer Review)", action: () => { triggerStage("evaluate"); closeCmd(); } },
@@ -255,7 +241,7 @@ function renderCmdResults(query) {
 function execCmd(index) {
     if (window._activeCmds && window._activeCmds[index]) {
         window._activeCmds[index].action();
-        document.getElementById("cmd-palette-modal").classList.add("hidden");
+        closeCmd();
     }
 }
 
@@ -263,7 +249,7 @@ function closeCmd() {
     document.getElementById("cmd-palette-modal").classList.add("hidden");
 }
 
-// --- 4. Chart Renderer ---
+// --- 5. Chart Renderer ---
 function initRadarChart() {
     const ctx = document.getElementById("radarChart");
     if (!ctx || typeof Chart === "undefined") return;
@@ -311,7 +297,7 @@ function initRadarChart() {
     });
 }
 
-// --- 5. Data Loader & Renderers ---
+// --- 6. Data Loaders & Renderers ---
 async function loadDashboardData() {
     try {
         const resp = await fetch(`${API_BASE}/leaderboard`);
@@ -328,6 +314,21 @@ async function loadDashboardData() {
     renderPreviewLeaderboard();
     renderFullLeaderboard();
     renderPRs();
+}
+
+async function loadMemoryBank() {
+    try {
+        const resp = await fetch(`${API_BASE}/memories`);
+        if (resp.ok) {
+            const data = await resp.json();
+            memoriesData = data.memories || STATIC_MEMORIES;
+        } else {
+            memoriesData = STATIC_MEMORIES;
+        }
+    } catch (e) {
+        memoriesData = STATIC_MEMORIES;
+    }
+    renderMemoryBank();
 }
 
 function renderPreviewLeaderboard() {
@@ -391,15 +392,97 @@ function renderPRs() {
     if (gridB) gridB.innerHTML = html;
 }
 
-// --- 6. Live Pipeline Controls & Terminal Logger ---
+function renderMemoryBank() {
+    const container = document.getElementById("memory-list-container");
+    if (!container) return;
+
+    const globals = memoriesData.global || [];
+    const repos = memoriesData.repo || [];
+
+    let html = "";
+    globals.forEach(m => {
+        html += `
+            <div class="memory-card">
+                <div class="memory-content">🌐 [GLOBAL] ${m.content || m}</div>
+                <span class="badge-sm">Confidence: ${m.confidence ? m.confidence.toFixed(2) : '1.00'}</span>
+            </div>
+        `;
+    });
+
+    repos.forEach(m => {
+        html += `
+            <div class="memory-card">
+                <div class="memory-content" style="color:#38bdf8">📁 [REPO SPECIFIC] ${m.content || m}</div>
+                <span class="badge-sm purple">Confidence: ${m.confidence ? m.confidence.toFixed(2) : '1.00'}</span>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// --- 7. Custom Dispatch & Memory Modals ---
+function handleCustomDispatch(event) {
+    event.preventDefault();
+    const repo = document.getElementById("dispatch-repo").value;
+    const issueNum = document.getElementById("dispatch-issue-num").value;
+    const agent = document.getElementById("dispatch-agent").value;
+
+    switchCockpitSubTab("triggers");
+    appendLog(`[DISPATCH CONTROL] Custom Dispatch Triggered for ${repo} #${issueNum} via ${agent}...`, "info");
+
+    fetch(`${API_BASE}/pipeline/trigger-dispatch`, { method: "POST" })
+        .then(r => r.json())
+        .then(data => {
+            appendLog(`[DISPATCH CONTROL] ${data.message}`, "success");
+        })
+        .catch(err => {
+            appendLog(`[DISPATCH CONTROL] Sandbox initiated for ${repo} #${issueNum}.`, "success");
+        });
+}
+
+function openAddMemoryModal() {
+    document.getElementById("add-memory-modal").classList.remove("hidden");
+}
+
+function closeAddMemoryModal() {
+    document.getElementById("add-memory-modal").classList.add("hidden");
+}
+
+function handleSaveCustomMemory(event) {
+    event.preventDefault();
+    const scope = document.getElementById("mem-scope").value;
+    const content = document.getElementById("mem-content").value;
+
+    fetch(`${API_BASE}/memories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope, content, memory_type: "convention" })
+    })
+    .then(r => r.json())
+    .then(data => {
+        closeAddMemoryModal();
+        loadMemoryBank();
+        appendLog(`[MEMORY BANK] Added custom engineering rule: ${content[:40]}...`, "success");
+    })
+    .catch(err => {
+        closeAddMemoryModal();
+        memoriesData.global.unshift({ content, confidence: 1.0, agent_name: "user_custom" });
+        renderMemoryBank();
+        appendLog(`[MEMORY BANK] Saved custom engineering rule locally.`, "success");
+    });
+}
+
+// --- 8. Live Terminal Console Logger ---
 function triggerStage(stageName) {
     switchTab("cockpit");
+    switchCockpitSubTab("triggers");
     appendLog(`[ACTION] Triggering Stage: ${stageName.toUpperCase()}...`, "info");
 
     setTimeout(() => {
         if (stageName === "discover") {
             appendLog("[STAGE 1] Scraping daily trending GitHub repositories (500-5,000 stars)...", "info");
-            appendLog("[STAGE 1] Ingested 13 candidate repositories & policy checks complete.", "success");
+            appendLog("[STAGE 1] Ingested candidate repositories & policy checks complete.", "success");
         } else if (stageName === "dispatch") {
             appendLog("[STAGE 2] Selecting candidate issue MakazhanAlpamys/Soup#404...", "info");
             appendLog("[STAGE 2] Forked harshitthek/Soup & cloned working sandbox.", "info");
@@ -431,7 +514,7 @@ function clearConsole() {
     if (term) term.innerHTML = `<div class="log-line info">[SYS] Terminal cleared.</div>`;
 }
 
-// --- 7. Patch Inspector Modal ---
+// --- 9. Patch Inspector Modal ---
 function openInspectorModal(issueNum) {
     const modal = document.getElementById("patch-inspector-modal");
     const pr = STATIC_PRS.find(p => p.issue_number === issueNum) || STATIC_PRS[0];

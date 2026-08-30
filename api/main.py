@@ -468,6 +468,52 @@ def get_agent_memories(repo_id: Optional[int] = Query(None, description="Optiona
             conn.close()
 
 
+class MemoryCreateRequest(BaseModel):
+    scope: str = Field(..., description="'global' or 'repository'")
+    content: str = Field(..., description="Engineering heuristic or rule text")
+    memory_type: str = Field("pattern", description="'pattern' | 'pitfall' | 'convention'")
+    repo_id: Optional[int] = None
+    agent_name: str = Field("user_custom", description="Source agent name")
+
+
+@app.post("/api/v1/memories")
+def add_agent_memory(req: MemoryCreateRequest):
+    """Manually add a custom rule/heuristic to the Autonomous Memory Bank."""
+    from memory_utils import record_memory
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection unavailable")
+    try:
+        success = record_memory(
+            conn, scope=req.scope, memory_type=req.memory_type,
+            content=req.content, repo_id=req.repo_id, agent_name=req.agent_name
+        )
+        if success:
+            return {"status": "success", "message": "Memory rule saved to Memory Bank"}
+        raise HTTPException(status_code=400, detail="Failed to save memory rule")
+    finally:
+        conn.close()
+
+
+@app.post("/api/v1/repos/{repo_id}/toggle")
+def toggle_repo_active(repo_id: int):
+    """Toggle repository tracking active status."""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection unavailable")
+    try:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE repos SET is_active = NOT is_active WHERE id = %s RETURNING is_active", (repo_id,))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Repository not found")
+            conn.commit()
+            new_state = row["is_active"] if isinstance(row, dict) else row[0]
+            return {"status": "success", "repo_id": repo_id, "is_active": new_state}
+    finally:
+        conn.close()
+
+
 @app.post("/api/v1/pipeline/trigger-submit", response_model=TriggerResponse)
 def trigger_submit():
     return _run_script("submit.py")

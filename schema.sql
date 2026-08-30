@@ -95,15 +95,16 @@ CREATE TABLE pr_submissions (
 
 -- Autonomous Agent Memory Bank (Global & Repo-Specific Memory)
 CREATE TABLE agent_memories (
-    id            SERIAL PRIMARY KEY,
-    scope         TEXT NOT NULL,               -- 'global' or 'repository'
-    repo_id       INTEGER REFERENCES repos(id) ON DELETE CASCADE, -- NULL for global scope
-    memory_type   TEXT NOT NULL,               -- 'pattern' | 'pitfall' | 'convention' | 'test_runner'
-    content       TEXT NOT NULL,               -- Concise engineering insight / rule
-    source_run_id INTEGER REFERENCES runs(id) ON DELETE SET NULL,
-    confidence    NUMERIC(3,2) NOT NULL DEFAULT 1.00,
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    id                SERIAL PRIMARY KEY,
+    scope             TEXT NOT NULL,               -- 'global' or 'repository'
+    repo_id           INTEGER REFERENCES repos(id) ON DELETE CASCADE, -- NULL for global scope
+    memory_type       TEXT NOT NULL,               -- 'pattern' | 'pitfall' | 'convention' | 'test_runner'
+    content           TEXT NOT NULL,               -- Concise engineering insight / rule
+    source_run_id     INTEGER REFERENCES runs(id) ON DELETE SET NULL,
+    source_agent_name TEXT DEFAULT 'system',
+    confidence        NUMERIC(3,2) NOT NULL DEFAULT 1.00,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_issues_status ON issues(status);

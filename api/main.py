@@ -455,6 +455,19 @@ def trigger_evaluate():
     return _run_script("evaluate.py")
 
 
+@app.get("/api/v1/memories")
+def get_agent_memories(repo_id: Optional[int] = Query(None, description="Optional repo ID filter")):
+    """Get active global and repo-specific memories from Autonomous Memory Bank."""
+    from memory_utils import fetch_agent_memories
+    conn = get_db_connection()
+    try:
+        memories = fetch_agent_memories(conn, repo_id=repo_id)
+        return {"status": "success", "memories": memories}
+    finally:
+        if conn:
+            conn.close()
+
+
 @app.post("/api/v1/pipeline/trigger-submit", response_model=TriggerResponse)
 def trigger_submit():
     return _run_script("submit.py")

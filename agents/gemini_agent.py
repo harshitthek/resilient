@@ -239,6 +239,10 @@ Issue #{ctx.issue_number}: {ctx.issue_title}
 {ctx.issue_body}
 
 === SENIOR MAINTAINER CONTRIBUTION STANDARDS ===
+0. MANDATORY FIRST STEP - REPOSITORY DOCUMENTATION INSPECTION:
+   - BEFORE making any code modifications, use list_files or read_file to check for existing developer guidelines and architectural docs such as AGENTS.md, CONTRIBUTING.md, README.md, DEVELOPMENT.md, or ARCHITECTURE.md.
+   - Read these files to align your implementation with the project's design principles, testing patterns, and code conventions.
+
 1. COMPREHENSIVE ROOT CAUSE ANALYSIS:
    - Begin by listing directory files and searching for the exact error symbol/function.
    - Trace the execution flow to identify why the bug occurs. Do not apply superficial patches or mask errors with silent fallbacks.

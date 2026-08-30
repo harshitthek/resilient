@@ -187,8 +187,9 @@ class QualityEnsembleAgent(AgentAdapter):
             f"Technical Analysis:\n{analysis}\n\n"
             f"Write clean, production-quality code modifications to fix this issue completely.\n"
             f"Requirements:\n"
+            f"- Prioritize inspecting repository docs (AGENTS.md, CONTRIBUTING.md, README.md, DEVELOPMENT.md) to follow project rules.\n"
             f"- Add robust null/boundary checks and edge-case handling.\n"
-            f"- Preserve host project style and type safety.\n"
+            f"- Preserve host project style, diff minimality, and type safety.\n"
             f"- Provide clean code and clear rationale."
         )
 

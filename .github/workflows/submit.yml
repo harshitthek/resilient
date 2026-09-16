@@ -1,9 +1,8 @@
 name: Submit verified PRs upstream
 
 on:
-  schedule:
-    - cron: '0 1,9,17 * * *'   # 1 hour after dispatch / 30m after evaluation
-  workflow_dispatch: {}      # manual trigger
+  # Automated cron disabled: human approval is required before submitting PRs
+  workflow_dispatch: {}      # manual trigger only
 
 jobs:
   submit:

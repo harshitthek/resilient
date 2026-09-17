@@ -52,10 +52,16 @@ DEFAULT_DISCLOSURE = (
 )
 
 
-def find_submittable_issues(conn, min_score=MIN_COMPOSITE_SCORE):
-    """Find issues with an evaluated run score >= min_score that lack a submission row."""
+def find_submittable_issues(conn, min_score=MIN_COMPOSITE_SCORE, require_human_approval=None, target_issue_id=None):
+    """Find issues with an evaluated run score >= min_score that lack a submission row.
+    
+    If require_human_approval is True, only returns issues where human_approved = TRUE.
+    """
+    if require_human_approval is None:
+        require_human_approval = REQUIRE_HUMAN_APPROVAL
+
     with conn.cursor() as cur:
-        cur.execute("""
+        query = """
             SELECT DISTINCT ON (i.id)
                    e.id AS eval_id, e.run_id, e.composite_score, e.tests_passed, e.reviewer_score, e.reviewer_notes,
                    r.agent_name, r.branch_name,
@@ -70,8 +76,16 @@ def find_submittable_issues(conn, min_score=MIN_COMPOSITE_SCORE):
               AND i.status IN ('discovered', 'dispatched')
               AND repo.is_active = TRUE
               AND e.composite_score >= %s
-            ORDER BY i.id ASC, e.composite_score DESC, e.id ASC
-        """, (min_score,))
+        """
+        params = [min_score]
+        if target_issue_id is not None:
+            query += " AND i.id = %s"
+            params.append(target_issue_id)
+        elif require_human_approval:
+            query += " AND i.human_approved = TRUE"
+
+        query += " ORDER BY i.id ASC, e.composite_score DESC, e.id ASC"
+        cur.execute(query, tuple(params))
         return cur.fetchall()
 
 

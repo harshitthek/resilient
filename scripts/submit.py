@@ -42,6 +42,7 @@ APP_PRIVATE_KEY = ""
 MAX_PRS_PER_REPO_PER_DAY = 2
 MAX_PRS_GLOBAL_PER_DAY = 10
 MIN_COMPOSITE_SCORE = 0.75
+REQUIRE_HUMAN_APPROVAL = os.environ.get("REQUIRE_HUMAN_APPROVAL", "true").strip().lower() in ("true", "1", "yes")
 
 DEFAULT_DISCLOSURE = (
     "> [!NOTE]\n"
@@ -72,6 +73,26 @@ def find_submittable_issues(conn, min_score=MIN_COMPOSITE_SCORE):
             ORDER BY i.id ASC, e.composite_score DESC, e.id ASC
         """, (min_score,))
         return cur.fetchall()
+
+
+def count_pending_approval_issues(conn, min_score=MIN_COMPOSITE_SCORE):
+    """Count evaluated issues meeting threshold that await human approval."""
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT COUNT(DISTINCT i.id)
+            FROM evaluations e
+            JOIN runs r ON r.id = e.run_id
+            JOIN issues i ON i.id = r.issue_id
+            JOIN repos repo ON repo.id = i.repo_id
+            LEFT JOIN pr_submissions prs ON prs.issue_id = i.id
+            WHERE prs.id IS NULL
+              AND i.status IN ('discovered', 'dispatched')
+              AND repo.is_active = TRUE
+              AND e.composite_score >= %s
+              AND (i.human_approved IS FALSE OR i.human_approved IS NULL)
+        """, (min_score,))
+        row = cur.fetchone()
+        return row[0] if row else 0
 
 
 def check_daily_caps(conn, repo_id: int) -> tuple[bool, str]:

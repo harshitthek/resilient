@@ -261,7 +261,12 @@ def submit_issue(conn, session, candidate):
         return
 
     # 4. Formulate & Submit PR
-    pr_title = f"fix(gpu): resolve issue #{issue_num} ({issue_title})"
+    clean_title = issue_title.strip()
+    if clean_title.lower().startswith("fix:"):
+        clean_title = clean_title[4:].strip()
+    elif clean_title.lower().startswith("fix(gpu):"):
+        clean_title = clean_title[9:].strip()
+    pr_title = f"fix: resolve issue #{issue_num} ({clean_title})"
     pr_body, disclosure_text = build_pr_body(issue_num, issue_title, agent_name, composite_score, reviewer_score, tests_passed)
 
     try:
@@ -338,6 +343,17 @@ def main():
         with open(pem_path, "r", encoding="utf-8") as f:
             APP_PRIVATE_KEY = f.read()
 
+    target_issue = None
+    force_submit = False
+    for i in range(1, len(sys.argv)):
+        if sys.argv[i] in ("--issue", "-i") and i + 1 < len(sys.argv):
+            try:
+                target_issue = int(sys.argv[i + 1])
+            except ValueError:
+                pass
+        elif sys.argv[i] == "--force":
+            force_submit = True
+
     if not DB_URL:
         print("Error: DATABASE_URL not set", file=sys.stderr)
         sys.exit(1)
@@ -348,8 +364,26 @@ def main():
     session = get_authenticated_session()
     conn = psycopg2.connect(DB_URL)
     try:
-        candidates = find_submittable_issues(conn)
-        print(f"Found {len(candidates)} submittable candidate issue(s).", file=sys.stderr)
+        pending_count = count_pending_approval_issues(conn)
+        if pending_count > 0:
+            print(f"🛡️ Human Approval Gate: {pending_count} evaluated issue(s) are awaiting human approval.", file=sys.stderr)
+            print("   Review and approve fixes via Dashboard (PR Approval Gate) before upstream PRs can be opened.", file=sys.stderr)
+
+        require_approval = False if force_submit else REQUIRE_HUMAN_APPROVAL
+        candidates = find_submittable_issues(
+            conn,
+            require_human_approval=require_approval,
+            target_issue_id=target_issue
+        )
+
+        if not candidates:
+            if require_approval and pending_count > 0:
+                print("Zero approved candidate issues. PR submission blocked until you approve them.", file=sys.stderr)
+            else:
+                print("Zero submittable candidate issue(s) found.", file=sys.stderr)
+            return
+
+        print(f"Found {len(candidates)} approved candidate issue(s) ready for submission.", file=sys.stderr)
 
         for candidate in candidates:
             try:

@@ -86,6 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Fetch live API data in background if server is running
     loadDashboardData();
     loadMemoryBank();
+    loadPendingApprovals();
 });
 
 // --- 1. Three.js Particle Background ---
@@ -178,10 +179,13 @@ function switchCockpitSubTab(subTabName) {
     });
 
     document.getElementById("cockpit-pane-triggers").classList.toggle("hidden", subTabName !== "triggers");
+    document.getElementById("cockpit-pane-approval-gate").classList.toggle("hidden", subTabName !== "approval-gate");
     document.getElementById("cockpit-pane-custom-dispatch").classList.toggle("hidden", subTabName !== "custom-dispatch");
     document.getElementById("cockpit-pane-memory-manager").classList.toggle("hidden", subTabName !== "memory-manager");
 
-    if (subTabName === "memory-manager") {
+    if (subTabName === "approval-gate") {
+        loadPendingApprovals();
+    } else if (subTabName === "memory-manager") {
         loadMemoryBank();
     }
 }
@@ -564,4 +568,131 @@ function copyPatchToClipboard() {
     navigator.clipboard.writeText(activeInspectorPatch).then(() => {
         alert("Git Patch diff copied to clipboard!");
     });
+}
+
+// --- 10. Human PR Approval Gate Logic ---
+async function loadPendingApprovals() {
+    const container = document.getElementById("pending-approvals-container");
+    const badge = document.getElementById("approval-badge");
+    if (!container) return;
+
+    try {
+        const resp = await fetch(`${API_BASE}/approvals/pending`);
+        if (resp.ok) {
+            const data = await resp.json();
+            const candidates = data.candidates || [];
+            const pendingCount = data.pending_count || 0;
+
+            if (badge) {
+                badge.innerText = pendingCount;
+                badge.classList.toggle("zero", pendingCount === 0);
+            }
+
+            if (candidates.length === 0) {
+                container.innerHTML = `
+                    <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-dim);">
+                        <div style="font-size: 32px; margin-bottom: 8px;">🛡️</div>
+                        <div style="font-size: 14px; font-weight: 600; color: #ffffff;">No Evaluated Fixes Awaiting Approval</div>
+                        <div style="font-size: 12px; margin-top: 4px;">When agents complete fixes and achieve score ≥ 0.75, they will appear here for your explicit sign-off before upstream submission.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = candidates.map(c => {
+                const isApproved = c.human_approved === true;
+                const statusBadge = isApproved 
+                    ? `<span class="badge-sm" style="background:#10b981; color:#fff">Approved for Upstream PR ✅</span>`
+                    : `<span class="badge-sm" style="background:#f59e0b; color:#000">Awaiting Your Approval ⏳</span>`;
+
+                return `
+                    <div class="approval-card ${isApproved ? 'approved' : ''}">
+                        <div>
+                            <div class="approval-meta-row">
+                                <span class="pr-repo">${c.repo_full_name}</span>
+                                <span class="pr-num">#${c.github_issue_number}</span>
+                            </div>
+                            <div class="approval-title">${c.issue_title}</div>
+                            <div class="approval-scores-strip">
+                                <span>Agent: <strong style="color:#c4b5fd">${c.agent_name}</strong></span>
+                                <span>Score: <strong style="color:#34d399">${(c.composite_score || 0).toFixed(2)}</strong></span>
+                                <span>Tests: <strong>${c.tests_passed ? 'Passed ✅' : 'Verified ⚠️'}</strong></span>
+                                ${statusBadge}
+                            </div>
+                            ${c.reviewer_notes ? `
+                                <div class="approval-notes-box">
+                                    <strong>Maintainer Review:</strong> ${typeof c.reviewer_notes === 'object' ? JSON.stringify(c.reviewer_notes) : c.reviewer_notes}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="approval-actions-bar">
+                            ${!isApproved ? `
+                                <button class="btn btn-success" onclick="approveIssue(${c.issue_id}, false)">✅ Approve Fix</button>
+                                <button class="btn btn-primary" onclick="approveIssue(${c.issue_id}, true)">🚀 Approve & Submit Now</button>
+                                <button class="btn btn-danger" onclick="rejectIssue(${c.issue_id})">❌ Reject</button>
+                            ` : `
+                                <button class="btn btn-primary" onclick="submitApprovedIssueDirect(${c.issue_id})">🚀 Submit Upstream PR Now</button>
+                                <button class="btn btn-danger" onclick="rejectIssue(${c.issue_id})">Revoke Approval</button>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+    } catch (err) {
+        console.warn("Failed to load approvals:", err);
+    }
+}
+
+async function approveIssue(issueId, submitNow = false) {
+    try {
+        const resp = await fetch(`${API_BASE}/approvals/${issueId}/approve`, { method: "POST" });
+        if (resp.ok) {
+            appendLog(`[APPROVAL GATE] Issue #${issueId} successfully approved by human maintainer.`, "success");
+            if (submitNow) {
+                appendLog(`[SUBMISSION] Opening authenticated upstream Pull Request for issue #${issueId}...`, "info");
+                const subResp = await fetch(`${API_BASE}/approvals/${issueId}/submit`, { method: "POST" });
+                const subData = await subResp.json();
+                if (subData.success) {
+                    appendLog(`[SUBMISSION] Upstream Pull Request submitted successfully!`, "success");
+                } else {
+                    appendLog(`[SUBMISSION] ${subData.message}`, "info");
+                }
+            }
+            loadPendingApprovals();
+        } else {
+            alert(`Failed to approve issue #${issueId}`);
+        }
+    } catch (err) {
+        alert(`Error approving issue: ${err.message}`);
+    }
+}
+
+async function rejectIssue(issueId) {
+    if (!confirm(`Are you sure you want to reject and discard the fix for issue #${issueId}?`)) return;
+    try {
+        const resp = await fetch(`${API_BASE}/approvals/${issueId}/reject`, { method: "POST" });
+        if (resp.ok) {
+            appendLog(`[APPROVAL GATE] Issue #${issueId} fix rejected and marked skipped.`, "info");
+            loadPendingApprovals();
+        }
+    } catch (err) {
+        alert(`Error rejecting issue: ${err.message}`);
+    }
+}
+
+async function submitApprovedIssueDirect(issueId) {
+    appendLog(`[SUBMISSION] Triggering upstream PR creation for approved issue #${issueId}...`, "info");
+    try {
+        const resp = await fetch(`${API_BASE}/approvals/${issueId}/submit`, { method: "POST" });
+        const data = await resp.json();
+        if (data.success) {
+            appendLog(`[SUBMISSION] PR created successfully: ${data.message}`, "success");
+        } else {
+            appendLog(`[SUBMISSION] Result: ${data.message}`, "info");
+        }
+        loadPendingApprovals();
+    } catch (err) {
+        appendLog(`[SUBMISSION] Error: ${err.message}`, "error");
+    }
 }

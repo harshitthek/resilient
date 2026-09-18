@@ -1,9 +1,8 @@
 name: Submit verified PRs upstream
 
 on:
-  schedule:
-    - cron: '0 1,9,17 * * *'   # 1 hour after dispatch / 30m after evaluation
-  workflow_dispatch: {}      # manual trigger
+  # Automated cron disabled: human approval is required before submitting PRs
+  workflow_dispatch: {}      # manual trigger only (only submits approved fixes)
 
 jobs:
   submit:
@@ -26,4 +25,5 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GITHUB_APP_ID: ${{ secrets.GH_APP_ID || secrets.APP_ID }}
           GITHUB_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY || secrets.APP_PRIVATE_KEY }}
+          REQUIRE_HUMAN_APPROVAL: "true"
         run: python scripts/submit.py

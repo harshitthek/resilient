@@ -516,7 +516,113 @@ def toggle_repo_active(repo_id: int):
 
 @app.post("/api/v1/pipeline/trigger-submit", response_model=TriggerResponse)
 def trigger_submit():
+    """Trigger submission stage - only submits human-approved fixes."""
     return _run_script("submit.py")
+
+
+# --- Human Approval Gate Endpoints ---
+
+@app.get("/api/v1/approvals/pending")
+def get_pending_approvals():
+    """Get evaluated candidate issues awaiting human review/approval before PR submission."""
+    conn = get_db_connection()
+    if not conn:
+        return {"status": "success", "count": 0, "pending_count": 0, "candidates": []}
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT DISTINCT ON (i.id)
+                       i.id AS issue_id, i.github_issue_number, i.title AS issue_title,
+                       i.human_approved,
+                       repo.id AS repo_id, repo.full_name AS repo_full_name, repo.language,
+                       r.id AS run_id, r.agent_name, r.branch_name, r.diff_url,
+                       e.id AS eval_id, e.composite_score, e.tests_passed, e.reviewer_score, e.reviewer_notes
+                FROM evaluations e
+                JOIN runs r ON r.id = e.run_id
+                JOIN issues i ON i.id = r.issue_id
+                JOIN repos repo ON repo.id = i.repo_id
+                LEFT JOIN pr_submissions prs ON prs.issue_id = i.id
+                WHERE prs.id IS NULL
+                  AND i.status IN ('discovered', 'dispatched')
+                  AND repo.is_active = TRUE
+                  AND e.composite_score >= 0.75
+                ORDER BY i.id ASC, e.composite_score DESC
+            """)
+            rows = cur.fetchall()
+            candidates = [dict(r) for r in rows]
+            for c in candidates:
+                if isinstance(c.get("composite_score"), (int, float)):
+                    c["composite_score"] = float(c["composite_score"])
+                if isinstance(c.get("reviewer_score"), (int, float)):
+                    c["reviewer_score"] = float(c["reviewer_score"])
+            return {
+                "status": "success",
+                "count": len(candidates),
+                "pending_count": sum(1 for c in candidates if not c.get("human_approved")),
+                "candidates": candidates
+            }
+    finally:
+        conn.close()
+
+
+@app.post("/api/v1/approvals/{issue_id}/approve")
+def approve_issue_submission(issue_id: int):
+    """Approve an evaluated issue for upstream pull request submission."""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection unavailable")
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE issues 
+                SET human_approved = TRUE, updated_at = now() 
+                WHERE id = %s 
+                RETURNING id, title, human_approved
+            """, (issue_id,))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Issue not found")
+            conn.commit()
+            return {
+                "status": "success",
+                "message": f"Issue #{issue_id} approved for PR submission.",
+                "issue": dict(row)
+            }
+    finally:
+        conn.close()
+
+
+@app.post("/api/v1/approvals/{issue_id}/reject")
+def reject_issue_submission(issue_id: int):
+    """Reject an evaluated issue and mark status as skipped."""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection unavailable")
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE issues 
+                SET human_approved = FALSE, status = 'skipped', updated_at = now() 
+                WHERE id = %s 
+                RETURNING id, title, status
+            """, (issue_id,))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Issue not found")
+            conn.commit()
+            return {
+                "status": "success",
+                "message": f"Issue #{issue_id} fix rejected and skipped.",
+                "issue": dict(row)
+            }
+    finally:
+        conn.close()
+
+
+@app.post("/api/v1/approvals/{issue_id}/submit", response_model=TriggerResponse)
+def submit_approved_issue(issue_id: int):
+    """Submit an approved issue as an upstream PR immediately."""
+    return _run_script("submit.py", args=["--issue", str(issue_id)])
 
 
 # Mount web UI static files if directory exists

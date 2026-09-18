@@ -47,6 +47,7 @@ CREATE TABLE issues (
         --      ↘            ↘
         --    skipped       skipped
     discovered_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    human_approved        BOOLEAN NOT NULL DEFAULT FALSE, -- Human approval gate: PR cannot be opened without explicit user signoff
     UNIQUE (repo_id, github_issue_number)
 );
 

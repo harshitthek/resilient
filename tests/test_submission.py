@@ -32,13 +32,35 @@ class TestCandidateSelection(unittest.TestCase):
         self.assertIn("e.composite_score >= %s", query_sql)
         self.assertIn("LEFT JOIN pr_submissions prs", query_sql)
 
-    def test_find_submittable_issues_uses_0_75_default(self):
+    def test_find_submittable_issues_enforces_human_approval_by_default(self):
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        submit.find_submittable_issues(mock_conn)
-        call_args = mock_cursor.execute.call_args[0][1]
-        self.assertEqual(call_args, (0.75,))
+        mock_cursor.fetchall.return_value = []
+
+        submit.find_submittable_issues(mock_conn, min_score=submit.MIN_COMPOSITE_SCORE, require_human_approval=True)
+        query_sql = mock_cursor.execute.call_args[0][0]
+        self.assertIn("i.human_approved = TRUE", query_sql)
+
+    def test_find_submittable_issues_can_target_specific_issue(self):
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        submit.find_submittable_issues(mock_conn, target_issue_id=42)
+        query_sql = mock_cursor.execute.call_args[0][0]
+        self.assertIn("i.id = %s", query_sql)
+        params = mock_cursor.execute.call_args[0][1]
+        self.assertIn(42, params)
+
+    def test_count_pending_approval_issues(self):
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        mock_cursor.fetchone.return_value = (3,)
+        count = submit.count_pending_approval_issues(mock_conn)
+        self.assertEqual(count, 3)
+        query_sql = mock_cursor.execute.call_args[0][0]
+        self.assertIn("human_approved IS FALSE", query_sql)
 
 
 class TestDailyCaps(unittest.TestCase):

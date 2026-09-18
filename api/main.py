@@ -565,6 +565,66 @@ def get_pending_approvals():
         conn.close()
 
 
+@app.post("/api/v1/approvals/{issue_id}/approve")
+def approve_issue_submission(issue_id: int):
+    """Approve an evaluated issue for upstream pull request submission."""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection unavailable")
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE issues 
+                SET human_approved = TRUE, updated_at = now() 
+                WHERE id = %s 
+                RETURNING id, title, human_approved
+            """, (issue_id,))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Issue not found")
+            conn.commit()
+            return {
+                "status": "success",
+                "message": f"Issue #{issue_id} approved for PR submission.",
+                "issue": dict(row)
+            }
+    finally:
+        conn.close()
+
+
+@app.post("/api/v1/approvals/{issue_id}/reject")
+def reject_issue_submission(issue_id: int):
+    """Reject an evaluated issue and mark status as skipped."""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection unavailable")
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE issues 
+                SET human_approved = FALSE, status = 'skipped', updated_at = now() 
+                WHERE id = %s 
+                RETURNING id, title, status
+            """, (issue_id,))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Issue not found")
+            conn.commit()
+            return {
+                "status": "success",
+                "message": f"Issue #{issue_id} fix rejected and skipped.",
+                "issue": dict(row)
+            }
+    finally:
+        conn.close()
+
+
+@app.post("/api/v1/approvals/{issue_id}/submit", response_model=TriggerResponse)
+def submit_approved_issue(issue_id: int):
+    """Submit an approved issue as an upstream PR immediately."""
+    return _run_script("submit.py", args=["--issue", str(issue_id)])
+
+
 # Mount web UI static files if directory exists
 web_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web")
 if os.path.exists(web_dir):
